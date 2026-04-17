@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Map from 'react-map-gl/maplibre';
 import DeckGL from '@deck.gl/react';
-import { PolygonLayer, GeoJsonLayer } from '@deck.gl/layers';
+import { GeoJsonLayer } from '@deck.gl/layers';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, BarChart2, CheckCircle } from 'lucide-react';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -152,7 +152,7 @@ export const OpsDashboard: React.FC = () => {
           <div style={{ position: 'relative', flexGrow: 1, minHeight: '600px', backgroundColor: '#1e2229', borderRadius: '8px 8px 0 0', overflow: 'hidden' }}>
             <DeckGL
               initialViewState={viewState}
-              onViewStateChange={({viewState}) => setViewState(viewState)}
+              onViewStateChange={({ viewState: nextViewState }) => setViewState(nextViewState as typeof INITIAL_VIEW_STATE)}
               controller={true}
               layers={layers}
               getTooltip={({object}) => object && (object.properties?.id || "Detection Polygon")}

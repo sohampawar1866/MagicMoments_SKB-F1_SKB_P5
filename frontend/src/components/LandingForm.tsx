@@ -188,14 +188,9 @@ export const LandingForm: React.FC = () => {
         const coastRes = await axios.get('http://localhost:8000/api/v1/tracker/coastline');
         setCoastalGeoJson(coastRes.data);
 
-        const center = turf.centerOfMass(currentSelection).geometry.coordinates;
-        const customAoiId = `custom_${center[0].toFixed(4)}_${center[1].toFixed(4)}`;
-
         // Reset local selection drawing state so we can see the popups
         setDrawingPoints([]);
         setCurrentSelection(null);
-        // We comment out navigate so the user hits the UX they asked for ("on spot popup")
-        // navigate(`/drift/aoi/${customAoiId}`);
       } catch (err: any) {
         console.error(err);
         if (err.response && err.response.data && err.response.data.detail) {
@@ -241,7 +236,7 @@ export const LandingForm: React.FC = () => {
           </button>
 
           <button
-            onClick={() => window.location.href = '/drift/history'}
+            onClick={() => navigate('/drift/history')}
             style={{ marginTop: '15px', width: '100%', background: '#2a2f38', border: '1px solid #475569', color: '#cbd5e1', padding: '10px', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.3s ease', fontWeight: 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
             onMouseOver={(e) => e.currentTarget.style.background = '#38404d'}
             onMouseOut={(e) => e.currentTarget.style.background = '#2a2f38'}
@@ -270,7 +265,7 @@ export const LandingForm: React.FC = () => {
       <div style={{ position: 'relative', flexGrow: 1, height: '100%' }}>
         <DeckGL
           initialViewState={viewState}
-          onViewStateChange={({ viewState }) => setViewState(viewState)}
+          onViewStateChange={({ viewState: nextViewState }) => setViewState(nextViewState as typeof INITIAL_VIEW_STATE)}
           controller={true}
           layers={layers}
           onClick={handleMapClick}

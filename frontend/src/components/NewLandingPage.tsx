@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import Lenis from 'lenis';
 import { Map, Satellite, Ship, Waves, type LucideIcon } from 'lucide-react';
 
@@ -11,13 +11,16 @@ gsap.registerPlugin(ScrollTrigger);
 const TOTAL_FRAMES = 40;
 
 // Stagger helper for child animations
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.15 } },
 };
-const fadeUp = {
+
+const smoothEase: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: smoothEase } },
 };
 
 export const NewLandingPage: React.FC = () => {
@@ -40,12 +43,19 @@ export const NewLandingPage: React.FC = () => {
       wheelMultiplier: 0.8,
       touchMultiplier: 2,
     });
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-    return () => lenis.destroy();
+
+    // Keep Lenis and ScrollTrigger in the same clock to avoid jitter/stalls.
+    lenis.on('scroll', ScrollTrigger.update);
+    const update = (time: number) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(update);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      gsap.ticker.remove(update);
+      lenis.destroy();
+    };
   }, []);
 
   // Preload image sequence
@@ -77,17 +87,28 @@ export const NewLandingPage: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const render = (index: number) => {
-      const img = images[index];
-      if (!img || !img.complete) return;
+    let cw = 0;
+    let ch = 0;
+    let rafId: number | null = null;
+    let queuedFrame = 0;
+
+    const setCanvasSize = () => {
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+      cw = rect.width;
+      ch = rect.height;
+      canvas.width = Math.round(cw * dpr);
+      canvas.height = Math.round(ch * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-      const cw = rect.width, ch = rect.height, iw = img.width, ih = img.height;
+    };
+
+    const render = (index: number) => {
+      const img = images[index];
+      if (!img || !img.complete || cw === 0 || ch === 0) return;
+      const iw = img.width;
+      const ih = img.height;
       const scale = Math.max(cw / iw, ch / ih);
       const nw = iw * scale, nh = ih * scale;
       const ox = (cw - nw) / 2, oy = (ch - nh) / 2;
@@ -95,8 +116,22 @@ export const NewLandingPage: React.FC = () => {
       ctx.drawImage(img, ox, oy, nw, nh);
     };
 
-    render(0);
-    const updateCanvasSize = () => render(Math.round(obj.frame));
+    const queueRender = (index: number) => {
+      queuedFrame = index;
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        render(queuedFrame);
+        rafId = null;
+      });
+    };
+
+    setCanvasSize();
+
+    queueRender(0);
+    const updateCanvasSize = () => {
+      setCanvasSize();
+      queueRender(Math.round(obj.frame));
+    };
     window.addEventListener('resize', updateCanvasSize);
 
     const obj = { frame: 0 };
@@ -110,11 +145,17 @@ export const NewLandingPage: React.FC = () => {
         end: '+=600%',
         scrub: 1,
         pin: true,
-        onUpdate: () => render(Math.round(obj.frame)),
+        onUpdate: () => queueRender(Math.round(obj.frame)),
       },
     });
 
-    return () => { window.removeEventListener('resize', updateCanvasSize); st.kill(); };
+    return () => {
+      window.removeEventListener('resize', updateCanvasSize);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      st.kill();
+    };
   }, [imagesLoaded, images]);
 
   /* ──────────────────────── DATA ──────────────────────── */
@@ -196,6 +237,8 @@ export const NewLandingPage: React.FC = () => {
       {/* ═══ HERO: IMAGE SEQUENCE ═══ */}
       <div ref={sequenceRef} className="relative w-full h-screen overflow-hidden bg-primary-navy">
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" />
+
+        <div className="absolute inset-0 bg-black/35 z-10" />
 
         <div className="absolute inset-0 bg-gradient-to-t from-primary-navy/80 via-transparent to-transparent z-10" />
 
