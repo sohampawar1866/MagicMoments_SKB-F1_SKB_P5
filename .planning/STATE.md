@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-04-17T13:59:35.970Z"
+status: executing
+last_updated: "2026-04-17T15:48:15.644Z"
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
-  percent: 60
+  total_plans: 16
+  completed_plans: 11
+  percent: 69
 ---
 
 # Project State: DRIFT / PlastiTrack — Backend Intelligence
@@ -21,18 +21,18 @@ progress:
 
 **Core Value:** `run_inference(tile) -> forecast_drift(detections) -> plan_mission(forecast)` produces a schema-valid cleanup mission from a real Sentinel-2 tile in < 15 s on a CPU laptop, with MARIDA IoU >= 0.45.
 
-**Current focus:** Phase 02 — trajectory-mission-planner
+**Current focus:** Phase 03 — real-training-weight-swap-mission-export-e2e
 
 **Scope boundary:** Intelligence layer only. No FastAPI wiring. No frontend. The existing `backend/api/routes.py` mock stays untouched.
 
 ## Current Position
 
-Phase: 02 (trajectory-mission-planner) — EXECUTING
-Plan: 1 of 5
+Phase: 03 (real-training-weight-swap-mission-export-e2e) — EXECUTING
+Plan: 2 of 6
 **Phase:** 3
-**Plan:** Not started
-**Status:** Ready to plan
-**Progress:** [██████░░░░] 60%
+**Plan:** 2 (01 complete)
+**Status:** Executing Phase 03
+**Progress:** [███████░░░] 69%
 
 Phase completion tracking:
 
@@ -55,6 +55,7 @@ Populated as phases complete.
 | Phase 01 P04 | 2min | 2 tasks | 12 files |
 | Phase 01-schema-foundation-dummy-inference P05 | 5min | 2 tasks | 3 files |
 | Phase 02-trajectory-mission-planner P02 | 2min | 1 tasks | 2 files |
+| Phase 03 P01 | 3min | 3 tasks tasks | 10 files files |
 
 ### Detection Metrics (Phase 3 exit targets — PRD Section 11.1)
 
@@ -139,11 +140,11 @@ None at roadmap-complete state. Phase 1 is unblocked and ready to plan.
 
 ### Last Action
 
-Completed Plan 01-05 (run_inference orchestrator + integration test + E2E CLI chain). Commits: `e30021d`, `ed108de`. Requirements closed: ML-04. **Phase 1 COMPLETE** — all 8 Phase 1 requirements closed (INFRA-01/02/03/04/06, ML-01/03/04). E2E CLI chain `python -m backend.{ml|physics|mission}` round-trips schema-valid JSON on a real MARIDA patch.
+Completed Plan 03-01 (environment prerequisites). Commits: `6b8bc8c` (reportlab pin), `ce1eb3d` (checkpoint gitignore), `99404f2` (Indian EEZ coastline basemap + clip script). Requirements closed: INFRA-05. Unblocks Plan 03-02 (mission export) and Plan 03-04 (weight-swap).
 
 ### Next Action
 
-Run `/gsd:transition` to close Phase 1 and plan Phase 2 (Trajectory + Mission Planner). Phase 2 will replace the stub bodies of `forecast_drift` (real Euler Lagrangian tracker over CMEMS+ERA5) and `plan_mission` (greedy+2-opt TSP); the detection schema is frozen and proven to round-trip cleanly through the chain, so Phase 2 implementations slot in without touching any caller.
+Proceed to Plan 03-02 (mission export: GPX + GeoJSON + PDF briefing). reportlab 4.4.10 installed; `data/basemap/ne_10m_coastline_indian_eez.shp` (199 features, 64 KB) on disk for PDF map panel; `backend/ml/checkpoints/` ready for user-supplied weight handoff.
 
 ### Files to Remember
 

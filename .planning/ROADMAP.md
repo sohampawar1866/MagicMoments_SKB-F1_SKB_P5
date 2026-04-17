@@ -107,7 +107,7 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Wave 1: Deps + offline basemap (reportlab, Natural Earth coastline clip, .gitignore hardening for checkpoints dir)
+- [x] 03-01-PLAN.md — Wave 1: Deps + offline basemap (reportlab, Natural Earth coastline clip, .gitignore hardening for checkpoints dir)
 - [ ] 03-02-PLAN.md — Wave 2: backend/mission/export.py (GPX + GeoJSON + PDF briefing) against synthetic fixtures — MISSION-03
 - [ ] 03-03-PLAN.md — Wave 2: Fallback infrastructure (scripts/run_full_chain_real.py + scripts/parity_hash.py + tests/test_fallback.py) — partial E2E-02
 - [ ] 03-04-PLAN.md — Wave 3: weights.py our_real branch + train.py D-03 review + weight-swap smoke + metrics re-eval — INFRA-05, ML-02/05/06/07/08/09 (scope-corrected per D-01: code-review, not training execution)
