@@ -27,6 +27,13 @@ export const HistoryPage = () => {
                 &larr; Return to Dashboard
             </button>
 
+            <button
+                onClick={() => navigate('/drift/dashboard')}
+                style={{ background: '#1f7a5d', color: '#eaf8f3', border: '1px solid #279a74', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', marginBottom: '30px', marginLeft: '10px', fontWeight: 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
+            >
+                Open Intel Dashboard
+            </button>
+
             <div style={{ display: 'grid', gap: '15px', maxWidth: '800px' }}>
                 {history.slice().reverse().map((item: any) => (
                     <div key={item.id} style={{ border: '1px solid #38404d', padding: '20px', borderRadius: '8px', background: '#272c35', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>

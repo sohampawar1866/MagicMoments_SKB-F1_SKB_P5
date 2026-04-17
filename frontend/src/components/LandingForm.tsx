@@ -295,6 +295,15 @@ export const LandingForm: React.FC = () => {
           >
             ACCESS DEPLOYMENT LOGS
           </button>
+
+          <button
+            onClick={() => navigate('/drift/dashboard')}
+            style={{ marginTop: '10px', width: '100%', background: '#1f7a5d', border: '1px solid #279a74', color: '#eaf8f3', padding: '10px', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.3s ease', fontWeight: 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#24916d'}
+            onMouseOut={(e) => e.currentTarget.style.background = '#1f7a5d'}
+          >
+            OPEN INTEL DASHBOARD
+          </button>
         </div>
 
         {/* Threat Legend Section */}

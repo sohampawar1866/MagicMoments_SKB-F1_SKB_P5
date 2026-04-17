@@ -527,6 +527,15 @@ export const NewLandingPage: React.FC = () => {
               >
                 View Search History
               </motion.button>
+
+              <motion.button
+                onClick={() => navigate('/drift/dashboard')}
+                className="inline-flex items-center justify-center px-12 py-5 font-inter font-medium text-sm border border-accent-cyan/40 text-accent-cyan rounded-full hover:bg-accent-cyan/10 transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Open Intel Dashboard
+              </motion.button>
             </div>
           </motion.div>
         </section>
