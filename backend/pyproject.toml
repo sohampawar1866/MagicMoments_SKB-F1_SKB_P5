@@ -1,0 +1,39 @@
+[project]
+name = "drift-backend"
+version = "0.1.0"
+description = "DRIFT / PlastiTrack backend intelligence layer — schema foundation + dummy inference"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    # Existing API skeleton (preserved — Phase 1 does NOT touch backend/api or backend/main.py)
+    "fastapi==0.110.0",
+    "uvicorn[standard]==0.29.0",
+    # Schema + config
+    "pydantic>=2.6,<3.0",
+    "pydantic-settings>=2.2,<3.0",
+    "geojson-pydantic>=1.2,<3.0",
+    "PyYAML>=6.0",
+    # ML
+    "torch==2.7.0",
+    "torchvision==0.22.0",
+    "segmentation-models-pytorch>=0.5.0,<0.6.0",
+    # Geospatial
+    "rasterio>=1.5.0,<1.6.0",
+    "shapely>=2.0,<3.0",
+    "pyproj>=3.7",
+    "geopandas>=1.0,<1.2",
+    "numpy>=1.26,<2.0",
+    "scikit-image>=0.24,<0.26",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["backend*"]

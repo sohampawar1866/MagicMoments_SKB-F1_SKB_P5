@@ -26,3 +26,19 @@ data/
 *.geojson
 *.shp
 *.gpkg
+
+# MARIDA dataset (4.5 GB — PITFALL mi3, never commit)
+MARIDA/
+
+# Model checkpoints (PITFALL M12 — use kagglehub, not git)
+# NOTE: kagglehub caches to ~/.cache/kagglehub/ which is OUTSIDE the repo,
+# so no gitignore rule is needed for it. The *.pth and *.ckpt rules below
+# catch any in-repo checkpoints if someone accidentally copies one in.
+*.pth
+*.ckpt
+
+# Phase metrics (generated at runtime)
+.planning/metrics/
+
+# Node (for future frontend)
+node_modules/
