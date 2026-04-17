@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Download, Trash2 } from 'lucide-react';
+import gsap from 'gsap';
 import api, { apiErrorMessage, type SearchRecord } from '../lib/api';
 
 export const HistoryPage = () => {
@@ -8,12 +9,23 @@ export const HistoryPage = () => {
     const [isClearing, setIsClearing] = useState(false);
     const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 900);
     const navigate = useNavigate();
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const onResize = () => setIsMobile(window.innerWidth <= 900);
         window.addEventListener('resize', onResize);
         return () => window.removeEventListener('resize', onResize);
     }, []);
+
+    useEffect(() => {
+        if (history.length > 0 && containerRef.current) {
+            gsap.fromTo(
+                containerRef.current.children,
+                { opacity: 0, scale: 0.95 },
+                { opacity: 1, scale: 1, duration: 0.4, stagger: 0.05, ease: 'back.out(1.2)' }
+            );
+        }
+    }, [history]);
 
     useEffect(() => {
         api.trackerSearch()
@@ -80,26 +92,29 @@ export const HistoryPage = () => {
     };
 
     return (
-        <div style={{ padding: isMobile ? '14px 14px 18px' : '28px 34px', background: '#1e2229', minHeight: '100vh', color: '#e2e8f0', boxSizing: 'border-box', fontFamily: 'Inter, sans-serif' }}>
-            <h2 className="type-page-title" style={{ color: '#f59e0b', marginBottom: '1.1rem', fontWeight: 'bold' }}>Sector Deployment History</h2>
+        <div style={{ padding: isMobile ? '14px 14px 18px' : '28px 34px', background: 'var(--color-background)', minHeight: '100vh', color: 'var(--color-text-main)', boxSizing: 'border-box', fontFamily: 'var(--font-manrope)' }}>
+            <h2 className="type-page-title" style={{ color: 'var(--color-text-main)', marginBottom: '1.1rem', fontWeight: 'bold' }}>Sector Deployment History</h2>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '30px' }}>
                 <button
                     onClick={() => navigate('/drift')}
-                    style={{ background: '#272c35', color: '#e2e8f0', border: '1px solid #38404d', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.2)', flex: isMobile ? 1 : undefined, minWidth: isMobile ? '100%' : undefined }}
+                    className="btn-secondary"
+                    style={{ flex: isMobile ? 1 : undefined, minWidth: isMobile ? '100%' : undefined }}
                 >
                     &larr; Return to Dashboard
                 </button>
 
                 <button
                     onClick={() => navigate('/drift/dashboard')}
-                    style={{ background: '#1f7a5d', color: '#eaf8f3', border: '1px solid #279a74', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.2)', flex: isMobile ? 1 : undefined, minWidth: isMobile ? '100%' : undefined }}
+                    className="btn-primary"
+                    style={{ flex: isMobile ? 1 : undefined, minWidth: isMobile ? '100%' : undefined }}
                 >
                     Open Intel Dashboard
                 </button>
 
                 <button
                     onClick={handleExportHistory}
-                    style={{ background: '#2b3442', color: '#e2e8f0', border: '1px solid #425064', padding: '10px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.2)', flex: isMobile ? 1 : undefined, minWidth: isMobile ? '100%' : undefined }}
+                    className="ghost-border card-hover"
+                    style={{ background: 'var(--color-surface-container-high)', color: 'var(--color-primary)', border: 'none', padding: '10px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flex: isMobile ? 1 : undefined, minWidth: isMobile ? '100%' : undefined }}
                 >
                     <Download size={16} />
                     Export History
@@ -108,34 +123,35 @@ export const HistoryPage = () => {
                 <button
                     onClick={handleClearHistory}
                     disabled={history.length === 0 || isClearing}
-                    style={{ background: history.length === 0 || isClearing ? '#3a3f48' : '#7f1d1d', color: history.length === 0 || isClearing ? '#9ca3af' : '#fee2e2', border: history.length === 0 || isClearing ? '1px solid #4b5563' : '1px solid #b91c1c', padding: '10px 16px', borderRadius: '4px', cursor: history.length === 0 || isClearing ? 'not-allowed' : 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 1px 2px rgba(0,0,0,0.2)', flex: isMobile ? 1 : undefined, minWidth: isMobile ? '100%' : undefined }}
+                    style={{ background: history.length === 0 || isClearing ? 'var(--color-surface-container)' : 'var(--color-error-container)', color: history.length === 0 || isClearing ? 'var(--color-text-muted)' : 'var(--color-error)', border: 'none', padding: '10px 16px', borderRadius: '4px', cursor: history.length === 0 || isClearing ? 'not-allowed' : 'pointer', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flex: isMobile ? 1 : undefined, minWidth: isMobile ? '100%' : undefined }}
                 >
                     <Trash2 size={16} />
                     {isClearing ? 'Clearing...' : 'Clear History'}
                 </button>
             </div>
 
-            <div style={{ display: 'grid', gap: '15px', width: '100%', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+            <div ref={containerRef} style={{ display: 'grid', gap: '15px', width: '100%', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
                 {history.slice().reverse().map((item) => (
-                    <div key={item.id} style={{ border: '1px solid #38404d', padding: isMobile ? '14px' : '20px', borderRadius: '8px', background: '#272c35', display: 'flex', justifyContent: 'space-between', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '16px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.2)' }}>
+                    <div key={item.id} className="ghost-border card-hover" style={{ padding: isMobile ? '14px' : '20px', borderRadius: '16px', background: 'var(--color-surface-container)', display: 'flex', justifyContent: 'space-between', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: '16px', border: 'none' }}>
                         <div>
-                            <h3 style={{ margin: '0 0 10px 0', color: '#e2e8f0', fontWeight: 'bold' }}>{item.id}</h3>
-                            <div className="type-body-md" style={{ color: '#94a3b8', lineHeight: '1.5' }}>
-                                <strong style={{ color: '#cbd5e1' }}>Logged:</strong> {item.date} <br />
-                                <strong style={{ color: '#cbd5e1' }}>Density Profile:</strong> {(item.density * 100).toFixed(1)}%<br />
-                                <strong style={{ color: '#cbd5e1' }}>Coordinates:</strong> {item.center[1].toFixed(4)}&deg;N, {item.center[0].toFixed(4)}&deg;E
+                            <h3 style={{ margin: '0 0 10px 0', color: 'var(--color-text-main)', fontWeight: 'bold', fontFamily: 'var(--font-jakarta)' }}>{item.id}</h3>
+                            <div className="type-body-md" style={{ color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+                                <strong style={{ color: 'var(--color-primary)' }}>Logged:</strong> {item.date} <br />
+                                <strong style={{ color: 'var(--color-primary)' }}>Density Profile:</strong> {(item.density * 100).toFixed(1)}%<br />
+                                <strong style={{ color: 'var(--color-primary)' }}>Coordinates:</strong> {item.center[1].toFixed(4)}&deg;N, {item.center[0].toFixed(4)}&deg;E
                             </div>
                         </div>
                         <button
                             onClick={() => handleRevisit(item)}
-                            style={{ padding: '12px 24px', background: '#10b981', color: '#1e2229', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)', width: isMobile ? '100%' : 'auto' }}
+                            className="btn-primary"
+                            style={{ padding: '12px 24px', width: isMobile ? '100%' : 'auto' }}
                         >
-                            REVISIT ON MAP
+                            REVISIT
                         </button>
                     </div>
                 ))}
                 {history.length === 0 && (
-                    <div style={{ color: '#94a3b8' }}>No tracking sectors deployed yet.</div>
+                    <div style={{ color: 'var(--color-text-muted)' }}>No tracking sectors deployed yet.</div>
                 )}
             </div>
         </div>

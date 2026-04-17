@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import Map from 'react-map-gl/maplibre';
 import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer } from '@deck.gl/layers';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, BarChart2, CheckCircle, FileCode2, FileText } from 'lucide-react';
+import gsap from 'gsap';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import api, {
   apiErrorMessage,
@@ -30,6 +31,7 @@ export const OpsDashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [detectionData, setDetectionData] = useState<DetectionFC | null>(null);
@@ -39,6 +41,16 @@ export const OpsDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [timeSlider, setTimeSlider] = useState(24);
   const [generatingMission, setGeneratingMission] = useState<ExportFormat | null>(null);
+
+  useEffect(() => {
+    if (dashboardRef.current) {
+      gsap.fromTo(
+        dashboardRef.current.children,
+        { opacity: 0, y: 15 },
+        { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out' }
+      );
+    }
+  }, []);
 
   const spatialQuery = React.useMemo<SpatialQuery | undefined>(() => {
     const toBbox = (coords: Array<[number, number]>): [number, number, number, number] => {
@@ -210,15 +222,15 @@ export const OpsDashboard: React.FC = () => {
   ].filter(Boolean);
 
   return (
-    <div style={{ padding: isMobile ? '1rem' : '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '100vh', background: '#1e2229', color: '#e2e8f0', fontFamily: 'Inter, sans-serif' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.9rem', borderBottom: '1px solid #38404d', paddingBottom: '1rem' }}>
-        <h2 style={{ margin: 0, color: '#e2e8f0', fontSize: isMobile ? '1rem' : '1.5rem' }}><Activity size={isMobile ? 18 : 24} style={{ marginRight: '8px', verticalAlign: 'middle', color: '#f59e0b' }} /> OPERATIONS: {aoi_id}</h2>
+    <div style={{ padding: isMobile ? '1rem' : '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '100vh', background: 'var(--color-background)', color: 'var(--color-text-main)', fontFamily: 'var(--font-manrope)' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.9rem', borderBottom: '1px solid var(--color-surface-variant)', paddingBottom: '1rem' }}>
+        <h2 style={{ margin: 0, color: 'var(--color-text-main)', fontSize: isMobile ? '1rem' : '1.5rem', fontFamily: 'var(--font-jakarta)' }}><Activity size={isMobile ? 18 : 24} style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--color-primary)' }} /> OPERATIONS: {aoi_id}</h2>
         
         <div style={{ display: 'flex', gap: '0.7rem', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
           <button 
             onClick={() => handleExportMission('gpx')}
             disabled={!!generatingMission || !detectionData}
-            style={{ padding: '0.6rem 1rem', background: '#f59e0b', color: '#1e2229', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset' }}>
+            style={{ padding: '0.6rem 1rem', background: 'var(--color-surface-high)', color: 'var(--color-primary)', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset', transition: 'all 0.3s ease' }}>
             <CheckCircle size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
             {generatingMission === 'gpx' ? 'GENERATING...' : 'EXPORT GPX'}
           </button>
@@ -226,7 +238,7 @@ export const OpsDashboard: React.FC = () => {
           <button
             onClick={() => handleExportMission('geojson')}
             disabled={!!generatingMission || !detectionData}
-            style={{ padding: '0.6rem 1rem', background: '#10b981', color: '#1e2229', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset' }}>
+            style={{ padding: '0.6rem 1rem', background: 'var(--color-surface-highest)', color: 'var(--color-primary)', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset', transition: 'all 0.3s ease' }}>
             <FileCode2 size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
             {generatingMission === 'geojson' ? 'GENERATING...' : 'EXPORT GEOJSON'}
           </button>
@@ -234,20 +246,20 @@ export const OpsDashboard: React.FC = () => {
           <button
             onClick={() => handleExportMission('pdf')}
             disabled={!!generatingMission || !detectionData}
-            style={{ padding: '0.6rem 1rem', background: '#06b6d4', color: '#0f172a', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset' }}>
+            style={{ padding: '0.6rem 1rem', background: 'var(--color-primary)', color: 'var(--color-on-primary)', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset', transition: 'all 0.3s ease' }}>
             <FileText size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
             {generatingMission === 'pdf' ? 'GENERATING...' : 'EXPORT PDF'}
           </button>
           
-          <button onClick={() => navigate('/drift')} style={{ padding: '0.6rem 1rem', background: '#272c35', color: '#cbd5e1', border: '1px solid #475569', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 140 : 'unset' }}>
+          <button onClick={() => navigate('/drift')} style={{ padding: '0.6rem 1rem', background: 'var(--color-surface-container)', color: 'var(--color-text-main)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 140 : 'unset', transition: 'background 0.3s' }}>
             ABORT & RETURN
           </button>
         </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: '1rem' }}>
-        <div style={{ background: '#272c35', borderRadius: '8px', border: '1px solid #38404d', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
-          <div style={{ position: 'relative', flexGrow: 1, minHeight: isMobile ? '380px' : '600px', backgroundColor: '#1e2229', borderRadius: '8px 8px 0 0', overflow: 'hidden' }}>
+      <div ref={dashboardRef} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: '1rem', flex: 1 }}>
+        <div style={{ background: 'var(--color-surface-container-low)', borderRadius: '16px', display: 'flex', flexDirection: 'column', padding: '6px', border: 'none' }}>
+          <div style={{ position: 'relative', flexGrow: 1, minHeight: isMobile ? '380px' : '600px', backgroundColor: 'var(--color-surface-lowest)', borderRadius: '12px 12px 0 0', overflow: 'hidden' }}>
             <DeckGL
               initialViewState={viewState}
               onViewStateChange={({ viewState: nextViewState }) => setViewState(nextViewState as typeof INITIAL_VIEW_STATE)}
@@ -259,69 +271,69 @@ export const OpsDashboard: React.FC = () => {
             </DeckGL>
           </div>
           
-          <div style={{ padding: isMobile ? '1rem' : '1.5rem', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1rem', alignItems: isMobile ? 'stretch' : 'center', background: '#2a2f38', borderRadius: '0 0 8px 8px', borderTop: '1px solid #38404d' }}>
+          <div style={{ padding: isMobile ? '1rem' : '1.5rem', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1rem', alignItems: isMobile ? 'stretch' : 'center', background: 'var(--color-surface-container)', borderRadius: '0 0 12px 12px', border: 'none' }}>
             <div style={{ flexGrow: 1, display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.8rem' }}>
-              <label style={{ color: '#cbd5e1', fontWeight: 'bold' }}>T+ FORECAST (HOURS): <span style={{ color: '#10b981' }}>{timeSlider}h</span></label>
-              <input type="range" min="0" max="72" step="24" value={timeSlider} onChange={e => setTimeSlider(Number(e.target.value))} style={{ flexGrow: 1, width: '100%', accentColor: '#10b981' }} />
+              <label style={{ color: 'var(--color-text-main)', fontWeight: 'bold', fontFamily: 'var(--font-jakarta)' }}>T+ FORECAST: <span style={{ color: 'var(--color-primary)' }}>{timeSlider}h</span></label>
+              <input type="range" min="0" max="72" step="24" value={timeSlider} onChange={e => setTimeSlider(Number(e.target.value))} style={{ flexGrow: 1, width: '100%', accentColor: 'var(--color-primary)' }} />
             </div>
-            <button disabled={loading} onClick={() => fetchForecast(timeSlider)} style={{ padding: '0.75rem 1.2rem', background: '#10b981', color: '#1e2229', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)', width: isMobile ? '100%' : 'auto' }}>
+            <button disabled={loading} onClick={() => fetchForecast(timeSlider)} style={{ padding: '0.75rem 1.2rem', background: 'var(--color-primary)', color: 'var(--color-on-primary)', fontWeight: 'bold', border: 'none', borderRadius: '9999px', cursor: 'pointer', width: isMobile ? '100%' : 'auto', transition: 'opacity 0.3s' }}>
               CALCULATE D.R.I.F.T. PHYSICS
             </button>
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ background: '#272c35', borderRadius: '8px', padding: isMobile ? '1rem' : '1.5rem', border: '1px solid #38404d', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: '#e2e8f0', fontWeight: 'bold' }}>RADAR LOGS</h3>
+          <div style={{ background: 'var(--color-surface-container-low)', borderRadius: '16px', padding: isMobile ? '1rem' : '1.5rem', border: 'none' }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--color-text-main)', fontWeight: 'bold', fontFamily: 'var(--font-jakarta)' }}>RADAR LOGS</h3>
             
-            <div style={{ padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', borderLeft: '3px solid #f59e0b', marginBottom: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#f59e0b' }}>Current Intel</h4>
-              {loading ? <p style={{ margin: 0, color: '#94a3b8' }}>Scanning...</p> : (
-                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#cbd5e1' }}>
+            <div style={{ padding: '1rem', background: 'var(--color-surface-container)', borderRadius: '8px', borderLeft: '4px solid var(--color-tertiary)', marginBottom: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-tertiary)' }}>Current Intel</h4>
+              {loading ? <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>Scanning...</p> : (
+                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--color-text-main)' }}>
                   {detectionData ? `Detected ${detectionData.features?.length || 0} anomaly clusters.` : 'No baseline data.'}
                 </div>
               )}
             </div>
 
-            <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderLeft: '3px solid #10b981' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#10b981' }}>Simulation Output</h4>
-              {loading ? <p style={{ margin: 0, color: '#94a3b8' }}>Processing vectors...</p> : (
-                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#cbd5e1' }}>
+            <div style={{ padding: '1rem', background: 'var(--color-surface-container)', borderRadius: '8px', borderLeft: '4px solid var(--color-primary)' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-primary)' }}>Simulation Output</h4>
+              {loading ? <p style={{ margin: 0, color: 'var(--color-text-muted)' }}>Processing vectors...</p> : (
+                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--color-text-main)' }}>
                   {forecastData ? `Generated ${forecastData.features?.length || 0} future D.R.I.F.T. paths.` : 'No active simulation.'}
                 </div>
               )}
             </div>
 
-            <div style={{ padding: '1rem', background: 'rgba(6, 182, 212, 0.1)', borderLeft: '3px solid #06b6d4', marginTop: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#06b6d4' }}>Mission Plan</h4>
+            <div style={{ padding: '1rem', background: 'var(--color-surface-container)', borderRadius: '8px', borderLeft: '4px solid var(--color-secondary)', marginTop: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-secondary)' }}>Mission Plan</h4>
               {missionData?.features?.[0]?.properties ? (
-                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#cbd5e1' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--color-text-main)' }}>
                   {(missionData.features[0].properties.waypoint_count ?? 0)} waypoints · {(missionData.features[0].properties.total_distance_km ?? 0).toFixed(1)} km
                 </div>
               ) : (
-                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#94a3b8' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                   No mission plan available.
                 </div>
               )}
             </div>
           </div>
 
-          <div style={{ background: '#272c35', borderRadius: '8px', padding: isMobile ? '1rem' : '1.5rem', border: '1px solid #38404d', flexGrow: 1, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ margin: '0 0 1.5rem 0', color: '#e2e8f0', fontWeight: 'bold' }}><BarChart2 size={18} style={{ marginRight: '8px', verticalAlign: 'middle', color: '#10b981' }} /> PLASTIC DEGRADATION MODEL</h3>
+          <div style={{ background: 'var(--color-surface-container-low)', borderRadius: '16px', padding: isMobile ? '1rem' : '1.5rem', border: 'none', flexGrow: 1 }}>
+            <h3 style={{ margin: '0 0 1.5rem 0', color: 'var(--color-text-main)', fontWeight: 'bold', fontFamily: 'var(--font-jakarta)' }}><BarChart2 size={18} style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--color-primary)' }} /> PLASTIC DEGRADATION MODEL</h3>
             {metricsData && metricsData.biofouling_chart_data && metricsData.biofouling_chart_data.length > 0 ? (
               <div style={{ height: '250px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={metricsData.biofouling_chart_data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#38404d" />
-                    <XAxis dataKey="age_days" stroke="#94a3b8" />
-                    <YAxis stroke="#94a3b8" />
-                    <Tooltip contentStyle={{ backgroundColor: '#272c35', border: '1px solid #f59e0b', color: '#e2e8f0' }} />
-                    <Line type="monotone" dataKey="simulated_confidence" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-surface-variant)" />
+                    <XAxis dataKey="age_days" stroke="var(--color-text-muted)" />
+                    <YAxis stroke="var(--color-text-muted)" />
+                    <Tooltip contentStyle={{ backgroundColor: 'var(--color-surface-highest)', borderRadius: '8px', border: 'none', color: 'var(--color-text-main)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }} />
+                    <Line type="monotone" dataKey="simulated_confidence" stroke="var(--color-primary)" strokeWidth={3} dot={{ fill: 'var(--color-primary)' }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <p style={{ color: '#94a3b8', textAlign: 'center', marginTop: '2rem' }}>No atmospheric degradation metrics logged.</p>
+              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', marginTop: '2rem' }}>No atmospheric degradation metrics logged.</p>
             )}
           </div>
         </div>

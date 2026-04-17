@@ -222,43 +222,43 @@ export const NewLandingPage: React.FC = () => {
   /* ──────────────────────── RENDER ──────────────────────── */
 
   return (
-    <div className="bg-primary-navy min-h-screen text-text-main overflow-x-hidden selection:bg-accent-cyan selection:text-primary-navy">
+    <div className="bg-background min-h-screen text-text-main overflow-x-hidden selection:bg-primary/20 selection:text-text-main">
 
       {/* Loading overlay */}
       {!imagesLoaded && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-primary-navy">
-          <span className="text-3xl font-syne font-light mb-4 text-text-main/50">Loading Experience</span>
-          <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden">
-            <div className="h-full bg-accent-cyan transition-all duration-300" style={{ width: `${loadingProgress}%` }} />
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
+          <span className="text-3xl font-jakarta font-light mb-4 text-text-main/50">Loading Experience</span>
+          <div className="w-64 h-1 bg-surface-variant rounded-full overflow-hidden">
+            <div className="h-full bg-primary transition-all duration-300" style={{ width: `${loadingProgress}%` }} />
           </div>
         </div>
       )}
 
       {/* ═══ HERO: IMAGE SEQUENCE ═══ */}
-      <div ref={sequenceRef} className="relative w-full h-screen overflow-hidden bg-primary-navy">
+      <div ref={sequenceRef} className="relative w-full h-screen overflow-hidden bg-background">
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" />
 
         <div className="absolute inset-0 bg-black/35 z-10" />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-primary-navy/80 via-transparent to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10" />
 
         <div className="absolute top-10 left-4 md:top-16 md:left-16 z-20 pointer-events-none max-w-[92vw]">
-          <h1 className="type-display-hero font-syne font-bold tracking-tight text-white leading-none drop-shadow-md">
+          <h1 className="type-display-hero font-jakarta font-bold tracking-tight text-white leading-none drop-shadow-md">
             D.R.I.F.T.
           </h1>
-          <p className="text-[11px] sm:text-sm md:text-lg font-inter tracking-[0.12em] sm:tracking-[0.2em] mt-3 md:mt-4 text-white/90 font-medium drop-shadow-sm">
+          <p className="text-[11px] sm:text-sm md:text-lg font-manrope tracking-[0.12em] sm:tracking-[0.2em] mt-3 md:mt-4 text-white/90 font-medium drop-shadow-sm">
             Debris Recognition, Imaging & Forecast Trajectory
           </p>
         </div>
 
         <div className="absolute bottom-24 left-4 right-4 md:left-16 md:right-auto z-20 pointer-events-none max-w-xl">
-          <p className="text-sm sm:text-base md:text-xl font-inter font-light leading-relaxed text-white/85 drop-shadow-sm">
+          <p className="text-sm sm:text-base md:text-xl font-manrope font-light leading-relaxed text-white/85 drop-shadow-sm">
             An AI-powered ocean surveillance platform that detects marine plastic debris from satellite imagery, forecasts its drift path, and plans optimal cleanup missions.
           </p>
         </div>
 
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center opacity-80 z-20 pointer-events-none">
-          <span className="text-[11px] uppercase tracking-[0.3em] font-inter mb-4 text-white drop-shadow-md">Scroll to explore</span>
+          <span className="text-[11px] uppercase tracking-[0.3em] font-manrope mb-4 text-white drop-shadow-md">Scroll to explore</span>
           <motion.div
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
@@ -268,7 +268,7 @@ export const NewLandingPage: React.FC = () => {
       </div>
 
       {/* ═══ MAIN CONTENT ═══ */}
-      <main className="relative z-20 bg-primary-navy pt-32 pb-48 rounded-t-[3rem] -mt-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.3)] border-t border-white/5">
+      <main className="relative z-20 bg-background pt-32 pb-48 rounded-t-[3rem] -mt-[3rem] shadow-[0_-30px_60px_rgba(0,0,0,0.5)]">
 
         {/* ── SECTION 1: THE PROBLEM ── */}
         <section className="max-w-5xl mx-auto px-6 mb-40">
@@ -278,11 +278,11 @@ export const NewLandingPage: React.FC = () => {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            <p className="text-xs font-inter uppercase tracking-[0.3em] text-accent-amber mb-6">The Problem</p>
-            <h2 className="text-4xl md:text-7xl font-syne font-normal tracking-tight mb-10">
-              8 million tons of plastic <span className="text-accent-amber italic">enter</span> our oceans<br />every single year.
+            <p className="text-xs font-manrope uppercase tracking-[0.3em] text-secondary mb-6">The Problem</p>
+            <h2 className="text-4xl md:text-7xl font-jakarta font-normal tracking-tight mb-10">
+              8 million tons of plastic <span className="text-primary italic">enter</span> our oceans<br />every single year.
             </h2>
-            <div className="grid md:grid-cols-2 gap-16 text-lg md:text-xl font-inter font-light leading-relaxed text-text-main/70">
+            <div className="grid md:grid-cols-2 gap-16 text-lg md:text-xl font-manrope font-light leading-relaxed text-text-main/70">
               <p>
                 In satellite imagery, a single pixel at 10-meter resolution covers enormous areas. Macroplastics often occupy less than 20% of a pixel, rendering them invisible to standard classification. Existing monitoring relies on ship surveys and beach cleanups — reactive approaches that miss 99% of floating debris.
               </p>
@@ -293,7 +293,7 @@ export const NewLandingPage: React.FC = () => {
           </motion.div>
 
           <motion.div
-            className="w-full h-[1px] bg-white/10 mt-24 origin-left"
+            className="w-full h-[1px] bg-surface-variant mt-24 origin-left"
             initial={{ scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
             viewport={{ once: true }}
@@ -314,10 +314,10 @@ export const NewLandingPage: React.FC = () => {
               <motion.div
                 key={s.label}
                 variants={fadeUp}
-                className="bg-stone rounded-2xl p-8 border border-white/5 text-center"
+                className="bg-surface-container rounded-3xl p-8 ghost-border text-center card-hover"
               >
-                <div className="text-4xl md:text-5xl font-syne font-bold text-accent-amber mb-2">{s.value}</div>
-                <div className="text-sm font-inter text-text-main/50 uppercase tracking-wider">{s.label}</div>
+                <div className="text-4xl md:text-5xl font-jakarta font-bold text-primary mb-2">{s.value}</div>
+                <div className="text-sm font-manrope text-text-main/50 uppercase tracking-wider">{s.label}</div>
               </motion.div>
             ))}
           </motion.div>
@@ -331,41 +331,34 @@ export const NewLandingPage: React.FC = () => {
             viewport={{ once: true, amount: 0.5 }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h2 className="type-display-lg font-syne font-medium tracking-tight mb-6">
+            <h2 className="type-display-lg font-jakarta font-medium tracking-tight mb-6">
               Ready to scan the ocean?
             </h2>
-            <p className="type-body-lg font-inter font-light leading-relaxed mb-10 md:mb-12 text-text-main/60">
+            <p className="type-body-lg font-manrope font-light leading-relaxed mb-10 md:mb-12 text-text-main/60">
               Define a target sector, detect floating debris, trace its future path, and plan a Coast Guard mission — all from your browser.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center w-full sm:w-auto">
               <motion.button
                 onClick={() => navigate('/drift')}
-                className="group relative inline-flex items-center justify-center w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 font-inter font-medium text-sm bg-accent-cyan text-primary-navy rounded-full transition-all duration-500 overflow-hidden"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="btn-primary"
               >
-                <div className="absolute inset-0 w-full h-full bg-accent-amber translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1]" />
-                <span className="relative z-10 flex items-center gap-3">
+                <span className="relative z-10 flex items-center justify-center gap-3 w-full">
                   Launch D.R.I.F.T. Map
-                  <motion.span className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</motion.span>
+                  <motion.span className="inline-block transition-transform duration-300 transform translate-x-0">→</motion.span>
                 </span>
               </motion.button>
 
               <motion.button
                 onClick={() => navigate('/drift/history')}
-                className="inline-flex items-center justify-center w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 font-inter font-medium text-sm border border-white/10 text-text-main/70 rounded-full hover:border-accent-amber/40 hover:text-accent-amber transition-all duration-300"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="btn-secondary"
               >
                 View Search History
               </motion.button>
 
               <motion.button
                 onClick={() => navigate('/drift/dashboard')}
-                className="inline-flex items-center justify-center w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 font-inter font-medium text-sm border border-accent-cyan/40 text-accent-cyan rounded-full hover:bg-accent-cyan/10 transition-all duration-300"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="btn-secondary"
               >
                 Open Intel Dashboard
               </motion.button>
@@ -381,8 +374,8 @@ export const NewLandingPage: React.FC = () => {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <p className="text-xs font-inter uppercase tracking-[0.3em] text-accent-cyan mb-6">Core Capabilities</p>
-            <h2 className="text-4xl md:text-6xl font-syne font-medium tracking-tight mb-16">
+            <p className="text-xs font-manrope uppercase tracking-[0.3em] text-primary mb-6">Core Capabilities</p>
+            <h2 className="text-4xl md:text-6xl font-jakarta font-medium tracking-tight mb-16">
               What D.R.I.F.T. <span className="text-white/40">does.</span>
             </h2>
           </motion.div>
@@ -398,13 +391,13 @@ export const NewLandingPage: React.FC = () => {
               <motion.div
                 key={f.title}
                 variants={fadeUp}
-                className="group bg-stone rounded-2xl p-8 border border-white/5 hover:border-accent-cyan/30 transition-colors duration-500"
+                className="group bg-surface-container rounded-3xl p-8 card-hover ghost-border"
               >
                 <div className="mb-5">
-                  <f.icon className="h-10 w-10 text-accent-cyan" strokeWidth={1.8} />
+                  <f.icon className="h-10 w-10 text-primary" strokeWidth={1.8} />
                 </div>
-                <h3 className="text-xl font-syne font-medium mb-3 text-text-main group-hover:text-accent-amber transition-colors duration-300">{f.title}</h3>
-                <p className="text-sm font-inter font-light leading-relaxed text-text-main/60">{f.desc}</p>
+                <h3 className="text-xl font-jakarta font-medium mb-3 text-text-main group-hover:text-secondary transition-colors duration-300">{f.title}</h3>
+                <p className="text-sm font-manrope font-light leading-relaxed text-text-main/60">{f.desc}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -418,9 +411,9 @@ export const NewLandingPage: React.FC = () => {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <p className="text-xs font-inter uppercase tracking-[0.3em] text-accent-cyan mb-6">Workflow</p>
-            <h2 className="text-4xl md:text-6xl font-syne font-medium tracking-tight mb-16">
-              How it <span className="text-accent-amber italic">works.</span>
+            <p className="text-xs font-manrope uppercase tracking-[0.3em] text-primary mb-6">Workflow</p>
+            <h2 className="text-4xl md:text-6xl font-jakarta font-medium tracking-tight mb-16">
+              How it <span className="text-secondary italic">works.</span>
             </h2>
           </motion.div>
 
@@ -435,13 +428,13 @@ export const NewLandingPage: React.FC = () => {
               <motion.div
                 key={s.step}
                 variants={fadeUp}
-                className="flex gap-8 items-start py-10 border-t border-white/5"
-                style={i === steps.length - 1 ? { borderBottom: '1px solid rgba(255,255,255,0.05)' } : {}}
+                className="flex gap-8 items-start py-10"
+                style={{ borderTop: i > 0 ? '1px solid var(--color-surface-variant)' : 'none' }}
               >
-                <span className="text-5xl md:text-7xl font-syne font-bold text-accent-amber/20 leading-none shrink-0">{s.step}</span>
+                <span className="text-5xl md:text-7xl font-jakarta font-bold text-secondary/40 leading-none shrink-0">{s.step}</span>
                 <div>
-                  <h3 className="text-2xl font-syne font-medium mb-3">{s.title}</h3>
-                  <p className="text-base font-inter font-light leading-relaxed text-text-main/60 max-w-2xl">{s.desc}</p>
+                  <h3 className="text-2xl font-jakarta font-medium mb-3">{s.title}</h3>
+                  <p className="text-base font-manrope font-light leading-relaxed text-text-main/60 max-w-2xl">{s.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -456,8 +449,8 @@ export const NewLandingPage: React.FC = () => {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <p className="text-xs font-inter uppercase tracking-[0.3em] text-accent-cyan mb-6">Under the Hood</p>
-            <h2 className="text-4xl md:text-6xl font-syne font-medium tracking-tight mb-16">
+            <p className="text-xs font-manrope uppercase tracking-[0.3em] text-primary mb-6">Under the Hood</p>
+            <h2 className="text-4xl md:text-6xl font-jakarta font-medium tracking-tight mb-16">
               Tech <span className="text-white/40">Stack.</span>
             </h2>
           </motion.div>
@@ -473,10 +466,10 @@ export const NewLandingPage: React.FC = () => {
               <motion.div
                 key={t.name}
                 variants={fadeUp}
-                className="bg-stone rounded-xl p-5 border border-white/5 hover:border-accent-amber/20 transition-colors duration-300"
+                className="bg-surface-container rounded-2xl p-5 card-hover ghost-border"
               >
-                <div className="text-sm font-inter font-medium text-text-main mb-1">{t.name}</div>
-                <div className="text-xs font-inter text-text-main/40">{t.role}</div>
+                <div className="text-sm font-manrope font-medium text-text-main mb-1">{t.name}</div>
+                <div className="text-xs font-manrope text-text-main/40">{t.role}</div>
               </motion.div>
             ))}
           </motion.div>
@@ -490,14 +483,14 @@ export const NewLandingPage: React.FC = () => {
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <p className="text-xs font-inter uppercase tracking-[0.3em] text-accent-cyan mb-6">System Design</p>
-            <h2 className="text-4xl md:text-5xl font-syne font-medium tracking-tight mb-12">
+            <p className="text-xs font-manrope uppercase tracking-[0.3em] text-primary mb-6">System Design</p>
+            <h2 className="text-4xl md:text-5xl font-jakarta font-medium tracking-tight mb-12">
               End-to-End <span className="text-white/40">Pipeline.</span>
             </h2>
           </motion.div>
 
           <motion.div
-            className="bg-stone rounded-2xl p-8 md:p-12 border border-white/5"
+            className="bg-surface-container rounded-3xl p-8 md:p-12 ghost-border"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }}
@@ -507,28 +500,28 @@ export const NewLandingPage: React.FC = () => {
               {[
                 {
                   stage: 'Data Ingestion',
-                  color: '#f59e0b',
+                  color: 'var(--color-secondary)',
                   items: ['AWS Earth Search STAC API', 'Sentinel-2 L2A (10m bands)', 'NIR + Red + SWIR download', 'Local caching with fallback'],
                 },
                 {
                   stage: 'AI Analysis',
-                  color: '#10b981',
+                  color: 'var(--color-primary)',
                   items: ['CNN + Vision Transformer pipeline', 'Sub-pixel plastic fraction extraction', 'FDI & NDVI spectral index calculation', 'Confidence-scored GeoJSON output'],
                 },
                 {
                   stage: 'Operations',
-                  color: '#f59e0b',
+                  color: 'var(--color-tertiary)',
                   items: ['Lagrangian particle drift (Euler step)', 'Coastal impact intensity mapping', 'TSP-optimal cleanup vessel routing', 'GPX export for nav systems'],
                 },
               ].map((col) => (
                 <div key={col.stage}>
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: col.color }} />
-                    <h3 className="text-lg font-syne font-medium">{col.stage}</h3>
+                    <h3 className="text-lg font-jakarta font-medium">{col.stage}</h3>
                   </div>
                   <ul className="space-y-3">
                     {col.items.map((item) => (
-                      <li key={item} className="flex items-start gap-3 text-sm font-inter text-text-main/60">
+                      <li key={item} className="flex items-start gap-3 text-sm font-manrope text-text-main/60">
                         <span className="text-text-main/20 mt-0.5">→</span>
                         {item}
                       </li>
@@ -541,8 +534,8 @@ export const NewLandingPage: React.FC = () => {
         </section>
 
         {/* ── FOOTER ── */}
-        <footer className="max-w-5xl mx-auto px-6 pt-16 border-t border-white/5">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-inter text-text-main/30">
+        <footer className="max-w-5xl mx-auto px-6 pt-16 border-t border-surface-variant">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-manrope text-text-main/30">
             <span>D.R.I.F.T. — Debris Recognition, Imaging & Forecast Trajectory</span>
             <span>Built for Sankalp Hackathon 2026 · Team MagicMoments</span>
           </div>

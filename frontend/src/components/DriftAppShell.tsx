@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Gauge, History, House, Map, Menu, X } from 'lucide-react';
 import { DRIFT_NAV_ITEMS } from '../config/driftRouteConfig';
+import gsap from 'gsap';
 
 export const DriftAppShell: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 900);
+  const navContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onResize = () => {
@@ -21,6 +23,16 @@ export const DriftAppShell: React.FC = () => {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
+  useEffect(() => {
+    if (navContainerRef.current) {
+      gsap.fromTo(
+        navContainerRef.current.children,
+        { opacity: 0, x: -20 },
+        { opacity: 1, x: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out' }
+      );
+    }
+  }, []);
+
   const mobileItems = [
     { label: 'Map', to: '/drift', icon: Map, activePrefixes: ['/drift'] },
     { label: 'History', to: '/drift/history', icon: History, activePrefixes: ['/drift/history'] },
@@ -28,7 +40,7 @@ export const DriftAppShell: React.FC = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative', backgroundColor: 'var(--color-background)' }}>
       {isMobile && (
         <button
           onClick={() => setOpen((prev) => !prev)}
@@ -39,18 +51,18 @@ export const DriftAppShell: React.FC = () => {
             zIndex: 120,
             width: 40,
             height: 40,
-            borderRadius: 10,
-            border: '1px solid #3f4959',
-            background: '#2a3340',
-            color: '#d7e2ef',
+            borderRadius: '50%',
+            border: 'none',
+            background: 'var(--color-surface-container-highest)',
+            color: 'var(--color-primary)',
             display: 'grid',
             placeItems: 'center',
             cursor: 'pointer',
-            boxShadow: '0 8px 22px rgba(0,0,0,0.35)',
+            boxShadow: '0 8px 32px rgba(0,22,37,0.3)',
           }}
           aria-label="Toggle D.R.I.F.T. navigation"
         >
-          {open ? <X size={18} /> : <Menu size={18} />}
+          {open ? <X size={20} /> : <Menu size={20} />}
         </button>
       )}
 
@@ -60,7 +72,8 @@ export const DriftAppShell: React.FC = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0, 0, 0, 0.45)',
+            background: 'rgba(8, 15, 18, 0.7)',
+            backdropFilter: 'blur(10px)',
             zIndex: 90,
           }}
         />
@@ -69,9 +82,8 @@ export const DriftAppShell: React.FC = () => {
       <aside
         style={{
           width: isMobile ? 240 : open ? 220 : 72,
-          transition: isMobile ? 'transform 0.2s ease' : 'width 0.2s ease',
-          background: '#202631',
-          borderRight: '1px solid #38404d',
+          transition: isMobile ? 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)' : 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+          background: 'var(--color-surface-container-lowest)',
           padding: '16px 10px 18px',
           boxSizing: 'border-box',
           position: isMobile ? 'fixed' : 'sticky',
@@ -82,6 +94,7 @@ export const DriftAppShell: React.FC = () => {
           zIndex: 100,
           display: 'flex',
           flexDirection: 'column',
+          boxShadow: isMobile ? '10px 0 30px rgba(0,0,0,0.5)' : 'none'
         }}
       >
         <button
@@ -89,25 +102,27 @@ export const DriftAppShell: React.FC = () => {
           style={{
             width: '100%',
             height: 42,
-            borderRadius: 10,
-            border: '1px solid #3f4959',
-            background: '#2a3340',
-            color: '#cbd5e1',
+            borderRadius: 9999,
+            border: 'none',
+            background: 'var(--color-surface-container-highest)',
+            color: 'var(--color-text-main)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: open || isMobile ? 'space-between' : 'center',
-            padding: open || isMobile ? '0 10px' : 0,
+            padding: open || isMobile ? '0 16px' : 0,
             cursor: 'pointer',
-            marginBottom: 16,
+            marginBottom: 24,
             opacity: isMobile ? 0 : 1,
             pointerEvents: isMobile ? 'none' : 'auto',
+            transition: 'background 0.3s'
           }}
+          className="card-hover"
         >
-          {(open || isMobile) && <span style={{ fontSize: 12, letterSpacing: '0.08em', fontWeight: 700 }}>D.R.I.F.T. NAV</span>}
+          {(open || isMobile) && <span style={{ fontSize: 13, letterSpacing: '0.1em', fontWeight: 700, fontFamily: 'var(--font-jakarta)' }}>NAVIGATE</span>}
           <Menu size={16} />
         </button>
 
-        <div style={{ display: 'grid', gap: 12 }}>
+        <div ref={navContainerRef} style={{ display: 'grid', gap: 12 }}>
           {DRIFT_NAV_ITEMS.map((item) => {
             const active = item.activePrefixes.some((prefix) =>
               prefix === '/drift' ? location.pathname === '/drift' : location.pathname.startsWith(prefix)
@@ -122,21 +137,24 @@ export const DriftAppShell: React.FC = () => {
                 }}
                 style={{
                   width: '100%',
-                  minHeight: 44,
-                  borderRadius: 11,
-                  border: active ? '1px solid #279a74' : '1px solid #34404f',
-                  background: active ? '#1f7a5d' : '#26303d',
-                  color: active ? '#eaf8f3' : '#d6dfeb',
+                  minHeight: 48,
+                  borderRadius: 9999,
+                  border: 'none',
+                  background: active ? 'var(--color-surface-container-highest)' : 'transparent',
+                  color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: open || isMobile ? 'flex-start' : 'center',
-                  gap: 12,
-                  padding: open || isMobile ? '0 12px' : 0,
+                  gap: 16,
+                  padding: open || isMobile ? '0 16px' : 0,
                   cursor: 'pointer',
                   fontWeight: 600,
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  boxShadow: active ? '0 4px 12px rgba(107, 212, 242, 0.1)' : 'none'
                 }}
+                className={!active ? "card-hover" : ""}
               >
-                <Icon size={16} />
+                <Icon size={18} />
                 {(open || isMobile) && <span style={{ fontSize: 13 }}>{item.label}</span>}
               </button>
             );
@@ -151,44 +169,47 @@ export const DriftAppShell: React.FC = () => {
             }}
             style={{
               width: '100%',
-              minHeight: 44,
-              borderRadius: 11,
-              border: '1px solid #415063',
-              background: '#2a3340',
-              color: '#e2e8f0',
+              minHeight: 48,
+              borderRadius: 9999,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--color-text-muted)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: open || isMobile ? 'flex-start' : 'center',
-              gap: 12,
-              padding: open || isMobile ? '0 12px' : 0,
+              gap: 16,
+              padding: open || isMobile ? '0 16px' : 0,
               cursor: 'pointer',
               fontWeight: 600,
+              transition: 'background 0.3s'
             }}
+            className="card-hover ghost-border"
           >
-            <House size={16} />
+            <House size={18} />
             {(open || isMobile) && <span style={{ fontSize: 13 }}>Landing</span>}
           </button>
         </div>
       </aside>
 
-      <div style={{ flex: 1, minWidth: 0, paddingBottom: isMobile ? 72 : 0 }}>
+      <div style={{ flex: 1, minWidth: 0, paddingBottom: isMobile ? 72 : 0, zIndex: 1 }}>
         <Outlet />
       </div>
 
       {isMobile && (
         <nav
+          className="glass-panel"
           style={{
             position: 'fixed',
             bottom: 0,
             left: 0,
             right: 0,
-            height: 64,
-            background: 'rgba(32, 38, 49, 0.96)',
-            backdropFilter: 'blur(10px)',
-            borderTop: '1px solid #38404d',
+            height: 72,
+            border: 'none',
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
             zIndex: 110,
+            borderRadius: '24px 24px 0 0',
+            boxShadow: '0 -10px 40px rgba(0,0,0,0.3)'
           }}
         >
           {mobileItems.map((item) => {
@@ -203,19 +224,19 @@ export const DriftAppShell: React.FC = () => {
                 style={{
                   border: 'none',
                   background: 'transparent',
-                  color: active ? '#10b981' : '#d7e2ef',
+                  color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 4,
+                  gap: 6,
                   fontSize: 11,
                   fontWeight: 700,
                   cursor: 'pointer',
                 }}
                 aria-label={`Open ${item.label}`}
               >
-                <Icon size={17} />
+                <Icon size={20} />
                 <span>{item.label}</span>
               </button>
             );
@@ -225,3 +246,4 @@ export const DriftAppShell: React.FC = () => {
     </div>
   );
 };
+

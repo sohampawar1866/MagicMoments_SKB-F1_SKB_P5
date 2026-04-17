@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DeckGL from '@deck.gl/react';
 import MapLibreMap from 'react-map-gl/maplibre';
@@ -20,6 +20,7 @@ import {
 import {
   ArrowLeft,
 } from 'lucide-react';
+import gsap from 'gsap';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import api, { apiErrorMessage } from '../lib/api';
 
@@ -61,11 +62,22 @@ const toPercent = (v: number) => `${(v * 100).toFixed(1)}%`;
 
 export const IntelDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const dashboardRef = useRef<HTMLElement>(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024);
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [dayWindow, setDayWindow] = useState<'7' | '30' | 'all'>('30');
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+
+  useEffect(() => {
+    if (dashboardRef.current) {
+      gsap.fromTo(
+        dashboardRef.current.children,
+        { opacity: 0, y: 15 },
+        { opacity: 1, y: 0, duration: 0.6, stagger: 0.1, ease: 'power2.out' }
+      );
+    }
+  }, []);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 1024);
@@ -200,7 +212,7 @@ export const IntelDashboardPage: React.FC = () => {
   }, [filteredRecords]);
 
   return (
-    <main style={{ minHeight: '100vh', background: '#1e2229', color: '#e2e8f0', fontFamily: 'Inter, sans-serif', padding: isMobile ? '0.9rem' : '1.2rem 1.6rem 2rem 1.6rem', overflowX: 'hidden' }}>
+    <main ref={dashboardRef} style={{ minHeight: '100vh', background: 'var(--color-background)', color: 'var(--color-text-main)', fontFamily: 'var(--font-manrope)', padding: isMobile ? '0.9rem' : '1.2rem 1.6rem 2rem 1.6rem', overflowX: 'hidden' }}>
         <header
           style={{
             display: 'flex',
@@ -209,13 +221,13 @@ export const IntelDashboardPage: React.FC = () => {
             flexWrap: 'wrap',
             gap: 16,
             marginBottom: 16,
-            borderBottom: '1px solid #38404d',
+            borderBottom: '1px solid var(--color-surface-variant)',
             paddingBottom: 14,
           }}
         >
           <div>
-            <h1 className="type-page-title" style={{ margin: 0, letterSpacing: '0.03em' }}>Operational Intelligence Dashboard</h1>
-            <div className="type-body-md" style={{ color: '#9aa7ba', marginTop: 6 }}>
+            <h1 className="type-page-title" style={{ margin: 0, letterSpacing: '0.03em', fontFamily: 'var(--font-jakarta)' }}>Operational Intelligence Dashboard</h1>
+            <div className="type-body-md" style={{ color: 'var(--color-text-muted)', marginTop: 6 }}>
               Day-wise deployment analytics, heat signatures, and hotspot ranking from tracker history.
             </div>
           </div>
@@ -225,13 +237,14 @@ export const IntelDashboardPage: React.FC = () => {
               value={dayWindow}
               onChange={(e) => setDayWindow(e.target.value as '7' | '30' | 'all')}
               style={{
-                background: '#273140',
-                color: '#e2e8f0',
-                border: '1px solid #3f4d61',
-                borderRadius: 8,
-                padding: '8px 10px',
+                background: 'var(--color-surface-container)',
+                color: 'var(--color-text-main)',
+                border: 'none',
+                borderRadius: 9999,
+                padding: '8px 16px',
                 fontWeight: 600,
                 minWidth: isMobile ? '100%' : undefined,
+                boxShadow: 'inset 0 0 0 1px rgba(62,72,76,0.15)'
               }}
             >
               <option value="7">Last 7 days</option>
@@ -241,50 +254,22 @@ export const IntelDashboardPage: React.FC = () => {
 
             <button
               onClick={() => navigate('/drift')}
-              style={{
-                background: '#1f7a5d',
-                color: '#eaf8f3',
-                border: '1px solid #279a74',
-                borderRadius: 8,
-                padding: '8px 12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                flex: isMobile ? 1 : undefined,
-              }}
+              className="btn-primary"
+              style={{ padding: '8px 16px', flex: isMobile ? 1 : undefined, fontSize: '0.85rem' }}
             >
               Open Map
             </button>
             <button
               onClick={() => navigate('/drift/history')}
-              style={{
-                background: '#2a3340',
-                color: '#e2e8f0',
-                border: '1px solid #415063',
-                borderRadius: 8,
-                padding: '8px 12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                flex: isMobile ? 1 : undefined,
-              }}
+              className="btn-secondary"
+              style={{ padding: '8px 16px', flex: isMobile ? 1 : undefined, fontSize: '0.85rem' }}
             >
               History
             </button>
             <button
               onClick={() => navigate('/')}
-              style={{
-                background: '#2a3340',
-                color: '#e2e8f0',
-                border: '1px solid #415063',
-                borderRadius: 8,
-                padding: '8px 12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                flex: isMobile ? 1 : undefined,
-                justifyContent: 'center',
-              }}
+              className="btn-secondary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center', padding: '8px 16px', flex: isMobile ? 1 : undefined, fontSize: '0.85rem' }}
             >
               <ArrowLeft size={14} /> Home
             </button>
@@ -301,15 +286,15 @@ export const IntelDashboardPage: React.FC = () => {
             ].map((card) => (
               <div
                 key={card.label}
+                className="card-hover ghost-border"
                 style={{
-                  background: '#262f3b',
-                  border: '1px solid #3b4758',
-                  borderRadius: 12,
-                  padding: '14px 16px',
+                  background: 'var(--color-surface-container)',
+                  borderRadius: 24,
+                  padding: '16px 20px',
                 }}
               >
-                <div style={{ color: '#93a1b5', fontSize: 12, marginBottom: 6 }}>{card.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#f3f7fb' }}>{card.value}</div>
+                <div style={{ color: 'var(--color-text-muted)', fontSize: 13, marginBottom: 6, fontFamily: 'var(--font-jakarta)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.label}</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'var(--font-jakarta)' }}>{card.value}</div>
               </div>
             ))}
           </div>
@@ -317,8 +302,8 @@ export const IntelDashboardPage: React.FC = () => {
 
         <section id="map-intel" style={{ marginBottom: 18 }}>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 2fr) minmax(280px, 1fr)', gap: 12 }}>
-            <div style={{ background: '#262f3b', border: '1px solid #3b4758', borderRadius: 12, overflow: 'hidden' }}>
-              <div style={{ padding: '10px 12px', borderBottom: '1px solid #3b4758', fontWeight: 700, color: '#d5dfeb' }}>
+            <div className="ghost-border" style={{ background: 'var(--color-surface-container)', borderRadius: 24, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 18px', borderBottom: '1px solid rgba(62,72,76,0.2)', fontWeight: 700, color: 'var(--color-text-main)', fontFamily: 'var(--font-jakarta)' }}>
                 Heat Signature Map
               </div>
               <div style={{ height: isMobile ? 320 : 430, position: 'relative' }}>
@@ -341,10 +326,10 @@ export const IntelDashboardPage: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ background: '#262f3b', border: '1px solid #3b4758', borderRadius: 12, padding: 12 }}>
-              <div style={{ fontWeight: 700, marginBottom: 10 }}>Risk Distribution</div>
+            <div className="ghost-border" style={{ background: 'var(--color-surface-container)', borderRadius: 24, padding: 18 }}>
+              <div style={{ fontWeight: 700, marginBottom: 12, fontFamily: 'var(--font-jakarta)', color: 'var(--color-text-main)' }}>Risk Distribution</div>
               {kpi.total === 0 ? (
-                <div style={{ color: '#8f9caf', fontSize: 13 }}>No deployments for selected window.</div>
+                <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No deployments for selected window.</div>
               ) : (
                 <div style={{ height: 260, minWidth: 0 }}>
                   <ResponsiveContainer width="100%" height="100%">
@@ -356,13 +341,13 @@ export const IntelDashboardPage: React.FC = () => {
                       </Pie>
                       <Tooltip
                         formatter={(value, name) => [`${value ?? 0}`, name]}
-                        contentStyle={{ backgroundColor: '#1f2732', border: '1px solid #364457', color: '#dce6f3' }}
+                        contentStyle={{ backgroundColor: 'var(--color-surface-highest)', borderRadius: '8px', border: 'none', color: 'var(--color-text-main)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               )}
-              <div style={{ marginTop: 8, fontSize: 12, color: '#9aa7ba', lineHeight: 1.5 }}>
+              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
                 <div>Critical: density {'>'} 70%</div>
                 <div>Elevated: density 40%-70%</div>
                 <div>Low: density {'<='} 40%</div>
@@ -373,35 +358,35 @@ export const IntelDashboardPage: React.FC = () => {
 
         <section id="day-trends" style={{ marginBottom: 18 }}>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', gap: 12 }}>
-            <div style={{ background: '#262f3b', border: '1px solid #3b4758', borderRadius: 12, padding: 12 }}>
-              <div style={{ fontWeight: 700, marginBottom: 10 }}>Average Density By Day</div>
+            <div className="ghost-border" style={{ background: 'var(--color-surface-container)', borderRadius: 24, padding: 18 }}>
+              <div style={{ fontWeight: 700, marginBottom: 12, fontFamily: 'var(--font-jakarta)', color: 'var(--color-text-main)' }}>Average Density By Day</div>
               <div style={{ height: 260 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={dailySeries}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#3a4657" />
-                    <XAxis dataKey="day" stroke="#9fb0c6" />
-                    <YAxis stroke="#9fb0c6" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-surface-variant)" />
+                    <XAxis dataKey="day" stroke="var(--color-text-muted)" />
+                    <YAxis stroke="var(--color-text-muted)" />
                     <Tooltip
                       formatter={(v) => `${(Number(v ?? 0) * 100).toFixed(1)}%`}
-                      contentStyle={{ backgroundColor: '#1f2732', border: '1px solid #364457', color: '#dce6f3' }}
+                      contentStyle={{ backgroundColor: 'var(--color-surface-highest)', borderRadius: '8px', border: 'none', color: 'var(--color-text-main)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}
                     />
-                    <Line type="monotone" dataKey="avgDensity" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981' }} />
-                    <Line type="monotone" dataKey="peakDensity" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b' }} />
+                    <Line type="monotone" dataKey="avgDensity" stroke="var(--color-primary)" strokeWidth={3} dot={{ fill: 'var(--color-primary)' }} />
+                    <Line type="monotone" dataKey="peakDensity" stroke="var(--color-tertiary)" strokeWidth={2} dot={{ fill: 'var(--color-tertiary)' }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            <div style={{ background: '#262f3b', border: '1px solid #3b4758', borderRadius: 12, padding: 12 }}>
-              <div style={{ fontWeight: 700, marginBottom: 10 }}>Deployments Per Day</div>
+            <div className="ghost-border" style={{ background: 'var(--color-surface-container)', borderRadius: 24, padding: 18 }}>
+              <div style={{ fontWeight: 700, marginBottom: 12, fontFamily: 'var(--font-jakarta)', color: 'var(--color-text-main)' }}>Deployments Per Day</div>
               <div style={{ height: 260 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailySeries}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#3a4657" />
-                    <XAxis dataKey="day" stroke="#9fb0c6" />
-                    <YAxis stroke="#9fb0c6" />
-                    <Tooltip contentStyle={{ backgroundColor: '#1f2732', border: '1px solid #364457', color: '#dce6f3' }} />
-                    <Bar dataKey="deployments" fill="#38bdf8" radius={[6, 6, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-surface-variant)" />
+                    <XAxis dataKey="day" stroke="var(--color-text-muted)" />
+                    <YAxis stroke="var(--color-text-muted)" />
+                    <Tooltip contentStyle={{ backgroundColor: 'var(--color-surface-highest)', borderRadius: '8px', border: 'none', color: 'var(--color-text-main)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }} />
+                    <Bar dataKey="deployments" fill="var(--color-secondary)" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -410,30 +395,30 @@ export const IntelDashboardPage: React.FC = () => {
         </section>
 
         <section id="hotspots" style={{ marginBottom: 18 }}>
-          <div style={{ background: '#262f3b', border: '1px solid #3b4758', borderRadius: 12, padding: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 10 }}>Top Hotspots (Sorted By Density)</div>
+          <div className="ghost-border" style={{ background: 'var(--color-surface-container)', borderRadius: 24, padding: 18 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12, fontFamily: 'var(--font-jakarta)', color: 'var(--color-text-main)' }}>Top Hotspots (Sorted By Density)</div>
             {hotspotRows.length === 0 ? (
-              <div style={{ color: '#8f9caf', fontSize: 13 }}>No hotspot data in selected period.</div>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No hotspot data in selected period.</div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ textAlign: 'left', color: '#96a6bd', borderBottom: '1px solid #3d495b' }}>
-                      <th style={{ padding: '8px 6px' }}>ID</th>
-                      <th style={{ padding: '8px 6px' }}>Density</th>
-                      <th style={{ padding: '8px 6px' }}>Date</th>
-                      <th style={{ padding: '8px 6px' }}>Lat</th>
-                      <th style={{ padding: '8px 6px' }}>Lon</th>
+                    <tr style={{ textAlign: 'left', color: 'var(--color-text-muted)', borderBottom: '1px solid rgba(62,72,76,0.15)' }}>
+                      <th style={{ padding: '12px 8px' }}>ID</th>
+                      <th style={{ padding: '12px 8px' }}>Density</th>
+                      <th style={{ padding: '12px 8px' }}>Date</th>
+                      <th style={{ padding: '12px 8px' }}>Lat</th>
+                      <th style={{ padding: '12px 8px' }}>Lon</th>
                     </tr>
                   </thead>
                   <tbody>
                     {hotspotRows.map((row) => (
-                      <tr key={row.id} style={{ borderBottom: '1px solid #334052' }}>
-                        <td style={{ padding: '8px 6px', color: '#e6edf6', fontWeight: 700 }}>{row.id}</td>
-                        <td style={{ padding: '8px 6px', color: '#f59e0b' }}>{toPercent(row.density)}</td>
-                        <td style={{ padding: '8px 6px', color: '#d0d9e5' }}>{row.day}</td>
-                        <td style={{ padding: '8px 6px', color: '#d0d9e5' }}>{row.lat.toFixed(4)}</td>
-                        <td style={{ padding: '8px 6px', color: '#d0d9e5' }}>{row.lon.toFixed(4)}</td>
+                      <tr key={row.id} className="card-hover" style={{ borderBottom: '1px solid rgba(62,72,76,0.1)' }}>
+                        <td style={{ padding: '12px 8px', color: 'var(--color-text-main)', fontWeight: 700 }}>{row.id}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--color-primary)' }}>{toPercent(row.density)}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--color-text-muted)' }}>{row.day}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--color-text-muted)' }}>{row.lat.toFixed(4)}</td>
+                        <td style={{ padding: '12px 8px', color: 'var(--color-text-muted)' }}>{row.lon.toFixed(4)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -444,12 +429,12 @@ export const IntelDashboardPage: React.FC = () => {
         </section>
 
         <section id="recent-ops">
-          <div style={{ background: '#262f3b', border: '1px solid #3b4758', borderRadius: 12, padding: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 10 }}>Recent Deployments</div>
+          <div className="ghost-border" style={{ background: 'var(--color-surface-container)', borderRadius: 24, padding: 18 }}>
+            <div style={{ fontWeight: 700, marginBottom: 12, fontFamily: 'var(--font-jakarta)', color: 'var(--color-text-main)' }}>Recent Deployments</div>
             {loading ? (
-              <div style={{ color: '#9aa7ba', fontSize: 13 }}>Loading mission logs...</div>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Loading mission logs...</div>
             ) : filteredRecords.length === 0 ? (
-              <div style={{ color: '#9aa7ba', fontSize: 13 }}>No deployment records yet.</div>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No deployment records yet.</div>
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 {[...filteredRecords]
@@ -458,21 +443,21 @@ export const IntelDashboardPage: React.FC = () => {
                   .map((r) => (
                     <div
                       key={r.id}
+                      className="card-hover ghost-border"
                       style={{
-                        background: '#212a36',
-                        border: '1px solid #334154',
-                        borderRadius: 8,
-                        padding: '10px 12px',
+                        background: 'var(--color-surface-container-high)',
+                        borderRadius: 16,
+                        padding: '12px 16px',
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                         gap: 8,
                         alignItems: 'center',
                       }}
                     >
-                      <div style={{ fontWeight: 700 }}>{r.id}</div>
-                      <div style={{ color: '#9fb0c6' }}>{toDayKey(r.date)}</div>
-                      <div style={{ color: '#10b981' }}>{r.center[1].toFixed(4)}N, {r.center[0].toFixed(4)}E</div>
-                      <div style={{ color: '#f59e0b', fontWeight: 700 }}>{toPercent(r.density)}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--color-text-main)' }}>{r.id}</div>
+                      <div style={{ color: 'var(--color-text-muted)' }}>{toDayKey(r.date)}</div>
+                      <div style={{ color: 'var(--color-secondary)' }}>{r.center[1].toFixed(4)}N, {r.center[0].toFixed(4)}E</div>
+                      <div style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{toPercent(r.density)}</div>
                     </div>
                   ))}
               </div>

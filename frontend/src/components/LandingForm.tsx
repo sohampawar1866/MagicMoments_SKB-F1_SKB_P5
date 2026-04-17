@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Map from 'react-map-gl/maplibre';
 import DeckGL from '@deck.gl/react';
 import { LineLayer, PathLayer, PolygonLayer, ScatterplotLayer, GeoJsonLayer } from '@deck.gl/layers';
 import * as turf from '@turf/turf';
+import gsap from 'gsap';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import api, { apiErrorMessage, type SearchRecord } from '../lib/api';
 
@@ -45,10 +46,17 @@ export const LandingForm: React.FC = () => {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 1024);
     window.addEventListener('resize', onResize);
+    
+    if (sidebarRef.current) {
+        gsap.fromTo(sidebarRef.current, { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out' });
+        gsap.fromTo(sidebarRef.current.children, { y: 15, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, delay: 0.2, ease: 'power2.out' });
+    }
+    
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
@@ -265,32 +273,32 @@ export const LandingForm: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', width: '100%', minHeight: '100vh', backgroundColor: '#1e2229', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', width: '100%', minHeight: '100vh', backgroundColor: 'var(--color-background)', fontFamily: 'var(--font-manrope)' }}>
 
       {/* Sidebar Panel */}
-      <div style={{ width: isMobile ? '100%' : '400px', minHeight: isMobile ? 'auto' : '100%', backgroundColor: '#272c35', borderRight: isMobile ? 'none' : '1px solid #38404d', borderBottom: isMobile ? '1px solid #38404d' : 'none', display: 'flex', flexDirection: 'column', zIndex: 10, boxShadow: isMobile ? '0 2px 10px rgba(0,0,0,0.2)' : '2px 0 10px rgba(0,0,0,0.2)' }}>
+      <div ref={sidebarRef} className="glass-panel ghost-border" style={{ width: isMobile ? '100%' : '400px', minHeight: isMobile ? 'auto' : '100%', backgroundColor: 'var(--color-surface-container)', borderRight: 'none', borderBottom: 'none', display: 'flex', flexDirection: 'column', zIndex: 10, borderRadius: isMobile ? '0 0 24px 24px' : '0 24px 24px 0', margin: isMobile ? '0 0 10px 0' : '0' }}>
 
         {/* Main Control Section */}
-        <div style={{ padding: isMobile ? '1rem' : '2rem', borderBottom: '1px solid #38404d' }}>
-          <h1 style={{ margin: '0 0 1rem 0', fontSize: isMobile ? '1.2rem' : '1.8rem', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: isMobile ? '1px' : '2px' }}>D.R.I.F.T._OS v2.0</h1>
+        <div style={{ padding: isMobile ? '1rem' : '2rem', borderBottom: '1px solid var(--color-surface-variant)' }}>
+          <h1 style={{ margin: '0 0 1rem 0', fontSize: isMobile ? '1.2rem' : '1.8rem', color: 'var(--color-text-main)', textTransform: 'uppercase', letterSpacing: isMobile ? '1px' : '2px', fontFamily: 'var(--font-jakarta)' }}>D.R.I.F.T._OS v2.0</h1>
 
-          <div style={{ marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: '1.6', color: '#94a3b8' }}>
-            <strong style={{ color: '#f59e0b' }}>&gt; SECTOR DEPLOYMENT</strong><br />
+          <div style={{ marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: '1.6', color: 'var(--color-text-muted)' }}>
+            <strong style={{ color: 'var(--color-primary)' }}>&gt; SECTOR DEPLOYMENT</strong><br />
             Click 1 ocean point. D.R.I.F.T. previews 100m x 100m for visibility, but processes a 10m x 10m Sentinel-2 patch.
             <br /><br />
-            <strong>Points Logged:</strong> <span style={{ color: '#e2e8f0', fontWeight: 'bold' }}>{drawingPoints.length}/1</span>
+            <strong>Points Logged:</strong> <span style={{ color: 'var(--color-text-main)', fontWeight: 'bold' }}>{drawingPoints.length}/1</span>
           </div>
 
           {drawingPoints.length === 1 && (
-            <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid #10b981', marginBottom: '1.5rem', fontSize: '0.9rem', color: '#10b981' }}>
+            <div style={{ padding: '1rem', background: 'var(--color-surface-container)', borderLeft: '4px solid var(--color-primary)', marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--color-primary)' }}>
               <span style={{ fontWeight: 'bold' }}>[ PATCH LOCKED ]</span><br />
               Center locked. 100m preview + 10m processing AOI generated.
             </div>
           )}
 
           {processingBbox && (
-            <div style={{ padding: '0.8rem', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', marginBottom: '1.1rem', fontFamily: 'monospace', fontSize: isMobile ? '0.72rem' : '0.78rem', color: '#9ce7cc', lineHeight: '1.5', overflowX: 'auto' }}>
-              <div style={{ color: '#10b981', fontWeight: 700, marginBottom: '0.25rem' }}>PROCESSING BBOX (10m)</div>
+            <div style={{ padding: '0.8rem', background: 'var(--color-surface-container-low)', border: 'none', borderRadius: '12px', marginBottom: '1.1rem', fontFamily: 'monospace', fontSize: isMobile ? '0.72rem' : '0.78rem', color: 'var(--color-primary)', lineHeight: '1.5', overflowX: 'auto' }}>
+              <div style={{ color: 'var(--color-primary)', fontWeight: 700, marginBottom: '0.25rem' }}>PROCESSING BBOX (10m)</div>
               <div>minLon: {processingBbox.minLon.toFixed(7)}</div>
               <div>minLat: {processingBbox.minLat.toFixed(7)}</div>
               <div>maxLon: {processingBbox.maxLon.toFixed(7)}</div>
@@ -301,24 +309,22 @@ export const LandingForm: React.FC = () => {
           <button
             onClick={handleSubmit}
             disabled={drawingPoints.length !== 1}
-            style={{ width: '100%', padding: '1rem', background: drawingPoints.length === 1 ? '#10b981' : '#38404d', color: drawingPoints.length === 1 ? '#1e2229' : '#64748b', border: 'none', borderRadius: '6px', cursor: drawingPoints.length === 1 ? 'pointer' : 'not-allowed', fontWeight: 'bold', fontSize: '1rem', textTransform: 'uppercase', transition: 'all 0.3s ease', boxShadow: drawingPoints.length === 1 ? '0 4px 6px rgba(16, 185, 129, 0.2)' : 'none' }}>
+            style={{ width: '100%', padding: '1rem', background: drawingPoints.length === 1 ? 'var(--color-primary)' : 'var(--color-surface-high)', color: drawingPoints.length === 1 ? 'var(--color-on-primary)' : 'var(--color-text-muted)', border: 'none', borderRadius: '12px', cursor: drawingPoints.length === 1 ? 'pointer' : 'not-allowed', fontWeight: 'bold', fontSize: '1rem', textTransform: 'uppercase', transition: 'all 0.3s ease' }}>
             {drawingPoints.length === 1 ? 'Initialize AWS Deep Scan' : 'Awaiting Ocean Point...'}
           </button>
 
           <button
             onClick={() => navigate('/drift/history')}
-            style={{ marginTop: '15px', width: '100%', background: '#2a2f38', border: '1px solid #475569', color: '#cbd5e1', padding: '10px', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.3s ease', fontWeight: 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
-            onMouseOver={(e) => e.currentTarget.style.background = '#38404d'}
-            onMouseOut={(e) => e.currentTarget.style.background = '#2a2f38'}
+            className="btn-secondary"
+            style={{ marginTop: '15px', width: '100%' }}
           >
             ACCESS DEPLOYMENT LOGS
           </button>
 
           <button
             onClick={() => navigate('/drift/dashboard')}
-            style={{ marginTop: '10px', width: '100%', background: '#1f7a5d', border: '1px solid #279a74', color: '#eaf8f3', padding: '10px', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.3s ease', fontWeight: 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
-            onMouseOver={(e) => e.currentTarget.style.background = '#24916d'}
-            onMouseOut={(e) => e.currentTarget.style.background = '#1f7a5d'}
+            className="btn-primary"
+            style={{ marginTop: '10px', width: '100%' }}
           >
             OPEN INTEL DASHBOARD
           </button>
@@ -326,14 +332,14 @@ export const LandingForm: React.FC = () => {
 
         {/* Threat Legend Section */}
         <div style={{ padding: isMobile ? '1rem' : '2rem', flexGrow: 1 }}>
-          <h4 style={{ margin: '0 0 1rem 0', color: '#94a3b8', textTransform: 'uppercase', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px' }}>Threat Legend & Analytics</h4>
+          <h4 style={{ margin: '0 0 1rem 0', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'var(--font-jakarta)' }}>Threat Legend & Analytics</h4>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '0.9rem', color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '0.9rem', color: 'var(--color-text-main)' }}>
             <div style={{ width: '16px', height: '16px', background: '#f59e0b', borderRadius: '4px', boxShadow: '0 0 5px #f59e0b' }}></div>
             <span>Critical Coastline Accumulation</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '0.9rem', color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '0.9rem', color: 'var(--color-text-main)' }}>
             <div style={{ width: '20px', height: '3px', background: 'linear-gradient(90deg, #10b981, #f59e0b)' }}></div>
             <span>Flat Vector: Predictive Drift Path</span>
           </div>
@@ -369,24 +375,25 @@ export const LandingForm: React.FC = () => {
             const color = risk === "CRITICAL" ? "#f59e0b" : risk === "ELEVATED" ? "#facc15" : "#10b981";
             return {
               html: `
-                <div style="font-family: monospace; font-size: 13px;">
-                  <h4 style="margin: 0 0 5px 0; color: #10b981; border-bottom: 1px solid #38404d; padding-bottom: 5px;">SECTOR: ${object.id}</h4>
-                  <div style="margin-bottom: 3px; color: #cbd5e1;"><strong>Risk Level:</strong> <span style="color: ${color}; font-weight: bold;">${risk}</span></div>
-                  <div style="margin-bottom: 3px; color: #cbd5e1;"><strong>Density:</strong> ${(object.density * 100).toFixed(1)}%</div>
-                  <div style="margin-bottom: 3px; color: #cbd5e1;"><strong>Bearing/Target:</strong> ${object.driftVector[1].toFixed(2)}&deg;N, ${object.driftVector[0].toFixed(2)}&deg;E</div>
-                  <div style="color: #94a3b8; margin-top: 5px; font-size: 11px;">Deployed: ${object.date}</div>
+                <div style="font-family: var(--font-manrope); font-size: 13px;">
+                  <h4 style="margin: 0 0 5px 0; color: var(--color-primary); border-bottom: 1px solid var(--color-surface-variant); padding-bottom: 5px; font-family: var(--font-jakarta);">SECTOR: ${object.id}</h4>
+                  <div style="margin-bottom: 3px; color: var(--color-text-main);"><strong>Risk Level:</strong> <span style="color: ${color}; font-weight: bold;">${risk}</span></div>
+                  <div style="margin-bottom: 3px; color: var(--color-text-main);"><strong>Density:</strong> ${(object.density * 100).toFixed(1)}%</div>
+                  <div style="margin-bottom: 3px; color: var(--color-text-main);"><strong>Bearing/Target:</strong> ${object.driftVector[1].toFixed(2)}&deg;N, ${object.driftVector[0].toFixed(2)}&deg;E</div>
+                  <div style="color: var(--color-text-muted); margin-top: 5px; font-size: 11px;">Deployed: ${object.date}</div>
                 </div>
               `,
               style: {
-                backgroundColor: 'rgba(39, 44, 53, 0.95)',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
-                color: '#e2e8f0',
-                borderRadius: '6px',
+                backgroundColor: 'var(--color-surface-container-high)',
+                border: 'none',
+                color: 'var(--color-text-main)',
+                borderRadius: '12px',
                 padding: '12px',
                 boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
                 zIndex: 10000,
                 marginTop: '15px',
-                left: '15px'
+                left: '15px',
+                backdropFilter: 'blur(20px)'
               }
             };
           }}
@@ -395,19 +402,19 @@ export const LandingForm: React.FC = () => {
         </DeckGL>
 
         {hoverInfo && !hoverInfo.hasObject && (
-          <div style={{
+          <div className="glass-panel" style={{
             position: 'absolute',
             left: hoverInfo.x + 15,
             top: hoverInfo.y + 15,
-            background: 'rgba(39, 44, 53, 0.9)',
-            color: '#10b981',
+            background: 'var(--color-surface-container-high)',
+            color: 'var(--color-primary)',
             padding: '6px 10px',
-            borderRadius: '4px',
+            borderRadius: '12px',
             fontSize: '12px',
             pointerEvents: 'none',
             zIndex: 1,
             fontFamily: 'monospace',
-            border: '1px solid rgba(16, 185, 129, 0.4)',
+            border: 'none',
             boxShadow: '0 4px 10px rgba(0,0,0,0.5)'
           }}>
             {hoverInfo.lat.toFixed(4)}&deg;N<br />

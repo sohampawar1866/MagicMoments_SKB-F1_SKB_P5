@@ -1,24 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.cdnfonts.com/css/cal-sans');
 
 @import "tailwindcss";
 
 @theme {
-  --color-primary-navy: #1e2229; /* Dark slate background */
-  --color-stone: #272c35; /* Card/panel background */
-  --color-accent-cyan: #10b981; /* Emerald green */
-  --color-accent-amber: #f59e0b; /* Gold/amber */
-  --color-text-main: #e2e8f0; /* Light text on dark */
+  --color-background: #0d1417;
+  --color-surface-lowest: #080f12;
+  --color-surface-low: #161d20;
+  --color-surface-container: #1a2124;
+  --color-surface-high: #242b2e;
+  --color-surface-highest: #2f3639;
+  --color-surface-variant: #2f3639;
+  --color-surface-bright: #333a3e;
+
+  --color-primary: #6bd4f2;
+  --color-primary-container: #249dba;
+  --color-on-primary: #003641;
   
-  --font-syne: 'Cal Sans', sans-serif;
-  --font-inter: 'Plus Jakarta Sans', sans-serif;
+  --color-secondary: #aecbd8;
+  --color-secondary-container: #2f4b55;
+
+  --color-tertiary: #9ad0d3;
+  
+  --color-error: #ffb4ab;
+
+  --color-outline: #879397;
+  --color-outline-variant: #3e484c;
+
+  --color-text-main: #dde3e8;
+  --color-text-muted: #bdc8cd;
+
+  --font-jakarta: 'Plus Jakarta Sans', sans-serif;
+  --font-manrope: 'Manrope', sans-serif;
 }
 
 body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-inter);
-  background-color: var(--color-primary-navy);
+  font-family: var(--font-manrope);
+  background-color: var(--color-background);
   color: var(--color-text-main);
   font-size: var(--type-body-md);
   -webkit-font-smoothing: antialiased;
@@ -35,30 +55,52 @@ body {
   --type-caption: clamp(0.72rem, 1.7vw, 0.8rem);
 }
 
-.type-display-hero {
-  font-size: var(--type-display-hero);
-}
-
-.type-display-lg {
-  font-size: var(--type-display-lg);
-}
-
-.type-page-title {
-  font-size: var(--type-page-title);
-}
-
+.type-display-hero,
+.type-display-lg,
+.type-page-title,
 .type-section-title {
-  font-size: var(--type-section-title);
+  font-family: var(--font-jakarta);
+  letter-spacing: -0.02em;
 }
 
-.type-body-lg {
-  font-size: var(--type-body-lg);
+.type-display-hero { font-size: var(--type-display-hero); }
+.type-display-lg { font-size: var(--type-display-lg); }
+.type-page-title { font-size: var(--type-page-title); }
+.type-section-title { font-size: var(--type-section-title); }
+.type-body-lg { font-size: var(--type-body-lg); }
+.type-body-md { font-size: var(--type-body-md); }
+.type-caption { font-size: var(--type-caption); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
+  color: var(--color-on-primary);
+  border-radius: 9999px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0.75rem 1.5rem;
+}
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-secondary {
+  background-color: var(--color-surface-highest);
+  color: var(--color-primary);
+  border-radius: 9999px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0.75rem 1.5rem;
+}
+.btn-secondary:active { transform: scale(0.98); }
+
+.glass-panel {
+  background-color: rgba(47, 54, 57, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
-.type-body-md {
-  font-size: var(--type-body-md);
-}
-
-.type-caption {
-  font-size: var(--type-caption);
+.ghost-border {
+  border: 1px solid rgba(62, 72, 76, 0.15);
 }
