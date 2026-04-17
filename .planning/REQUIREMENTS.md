@@ -25,7 +25,7 @@ Core scaffolding that every downstream module consumes. Cannot be deferred.
 - [x] **ML-01**: `backend/ml/features.py` — pure NumPy FDI (Biermann 2020), NDVI, PI (Themistocleous 2020). Single source of truth for train+serve. Unit test: known water pixel → FDI within 0.001 of Biermann published value.
 - [ ] **ML-02**: `backend/ml/dataset.py` — MARIDA loader reading `MARIDA/splits/{train,val,test}_X.txt` → tuples of (11-band `.tif`, `_cl.tif` mask, `_conf.tif` weight). Normalizes reflectance with S2 L2A BOA_ADD_OFFSET (−1000 DN then /10000); excludes `_conf.tif == 0` pixels from loss; handles B6/B11 resample to 10 m reference.
 - [x] **ML-03**: `backend/ml/model.py` — `segmentation_models_pytorch.UnetPlusPlus(encoder_name="resnet18", encoder_weights="imagenet", in_channels=14, classes=1)` with SE spectral-attention block at encoder stem; **dual output heads**: binary plastic mask + fractional-cover regression. Assert `model.encoder.conv1.weight.std() > 0` to catch dead-init on `in_channels=14`.
-- [ ] **ML-04**: `backend/ml/inference.py` — `run_inference(tile_path, cfg) -> DetectionFeatureCollection`. Sliding 256×256 windows with stride-128 overlap and cosine-blended stitching; threshold + `rasterio.features.shapes` polygonization with `.buffer(0)` fix and `area_m2 >= MIN_AREA_M2` filter; pydantic-validated output. **Phase 1 runs on `dummy` weights** (lightweight random init) so the pipeline is schema-complete before real weights exist.
+- [x] **ML-04**: `backend/ml/inference.py` — `run_inference(tile_path, cfg) -> DetectionFeatureCollection`. Sliding 256×256 windows with stride-128 overlap and cosine-blended stitching; threshold + `rasterio.features.shapes` polygonization with `.buffer(0)` fix and `area_m2 >= MIN_AREA_M2` filter; pydantic-validated output. **Phase 1 runs on `dummy` weights** (lightweight random init) so the pipeline is schema-complete before real weights exist.
 - [ ] **ML-05**: `backend/ml/train.py` — Kaggle-ready 25-epoch training loop: Adam 1e-4, cosine schedule, Dice + pos-weighted BCE on binary head (pos_weight ≈ 40 to counter ~2% plastic pixels), MSE ×0.3 on fraction head. Uses `_conf.tif` as per-pixel weight. No `torch.compile`, no `bfloat16`. Saves best-IoU checkpoint via `kagglehub.model_upload`.
 - [ ] **ML-06**: Sub-pixel fraction regression head — training data augmented with alpha-blended plastic×water at α ∈ {0.05, 0.1, 0.2, 0.4}. Target: **MAE ≤ 0.15** on synthetic held-out val. Populates `fraction_plastic` at inference.
 - [ ] **ML-07**: Biofouling instrumentation — (a) training-time augmentation: multiply NIR (B8) and RedEdge (B6/B7) by `uniform(0.5, 1.0)` on 40% of positive samples with synthetic age label; (b) inference-time decay: `conf_adj = conf_raw · exp(−age_days_est / 30)` applied in post-processing.
@@ -109,7 +109,7 @@ Confirmed during roadmap creation 2026-04-17. All 25 v1 requirements map to exac
 | ML-01 | Phase 1 | Complete |
 | ML-02 | Phase 3 | Pending |
 | ML-03 | Phase 1 | Complete |
-| ML-04 | Phase 1 | Pending |
+| ML-04 | Phase 1 | Complete |
 | ML-05 | Phase 3 | Pending |
 | ML-06 | Phase 3 | Pending |
 | ML-07 | Phase 3 | Pending |
