@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import Map from 'react-map-gl/maplibre';
 import DeckGL from '@deck.gl/react';
 import { GeoJsonLayer } from '@deck.gl/layers';
@@ -14,6 +14,8 @@ import api, {
   type MissionFC,
   type ExportFormat,
   type AlertsResponse,
+  type SpatialQuery,
+  type AoiEntry,
 } from '../lib/api';
 
 const INITIAL_VIEW_STATE = {
@@ -27,6 +29,7 @@ const INITIAL_VIEW_STATE = {
 export const OpsDashboard: React.FC = () => {
   const { aoi_id } = useParams<{ aoi_id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024);
 
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
@@ -39,6 +42,34 @@ export const OpsDashboard: React.FC = () => {
   const [timeSlider, setTimeSlider] = useState(24);
   const [generatingMission, setGeneratingMission] = useState<ExportFormat | null>(null);
 
+  const spatialQuery = React.useMemo<SpatialQuery | undefined>(() => {
+    const toBbox = (coords: Array<[number, number]>): [number, number, number, number] => {
+      const lons = coords.map(([lon]) => lon);
+      const lats = coords.map(([, lat]) => lat);
+      return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+    };
+
+    const state = location.state as { coordinates?: Array<[number, number]> } | null;
+    const polygon = state?.coordinates;
+    if (polygon && polygon.length >= 3) {
+      return { polygon, bbox: toBbox(polygon) };
+    }
+
+    if (aoi_id?.startsWith('custom_')) {
+      const parts = aoi_id.split('_');
+      if (parts.length === 3) {
+        const lon = Number(parts[1]);
+        const lat = Number(parts[2]);
+        if (Number.isFinite(lon) && Number.isFinite(lat)) {
+          const halfSpan = 0.03;
+          return { bbox: [lon - halfSpan, lat - halfSpan, lon + halfSpan, lat + halfSpan] };
+        }
+      }
+    }
+
+    return undefined;
+  }, [aoi_id, location.state]);
+
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 1024);
     window.addEventListener('resize', onResize);
@@ -49,13 +80,13 @@ export const OpsDashboard: React.FC = () => {
     setLoading(true);
     try {
       if (!aoi_id) return;
-      setDetectionData(await api.detect(aoi_id));
+      setDetectionData(await api.detect(aoi_id, spatialQuery));
     } catch (err) {
       console.error('detect:', apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [aoi_id]);
+  }, [aoi_id, spatialQuery]);
 
   const fetchForecast = React.useCallback(async (hours: number) => {
     if (hours === 0) {
@@ -68,32 +99,32 @@ export const OpsDashboard: React.FC = () => {
       const allowedHours = hours === 24 || hours === 48 || hours === 72
         ? hours
         : 24;
-      setForecastData(await api.forecast(aoi_id, allowedHours));
+      setForecastData(await api.forecast(aoi_id, allowedHours, spatialQuery));
     } catch (err) {
       console.error('forecast:', apiErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [aoi_id]);
+  }, [aoi_id, spatialQuery]);
 
   const fetchMission = React.useCallback(async () => {
     try {
       if (!aoi_id) return;
-      setMissionData(await api.mission(aoi_id));
+      setMissionData(await api.mission(aoi_id, spatialQuery));
     } catch (err) {
       console.error('mission:', apiErrorMessage(err));
       setMissionData(null);
     }
-  }, [aoi_id]);
+  }, [aoi_id, spatialQuery]);
 
   const fetchDashboardMetrics = React.useCallback(async () => {
     try {
       if (!aoi_id) return;
-      setMetricsData(await api.dashboardMetrics(aoi_id));
+      setMetricsData(await api.dashboardMetrics(aoi_id, spatialQuery));
     } catch (err) {
       console.error('metrics:', apiErrorMessage(err));
     }
-  }, [aoi_id]);
+  }, [aoi_id, spatialQuery]);
 
   const fetchAlerts = React.useCallback(async () => {
     try {
@@ -107,37 +138,47 @@ export const OpsDashboard: React.FC = () => {
 
   useEffect(() => {
     if (!aoi_id) return;
-    fetchDashboardMetrics();
-    fetchDetection();
-    fetchForecast(timeSlider);
-    fetchMission();
-    fetchAlerts();
-    
-    // Dynamically update viewState center based on custom string or available AOIs
-    if (aoi_id && aoi_id.startsWith('custom_')) {
-      const parts = aoi_id.split('_');
-      if (parts.length === 3) {
-        setViewState(prev => ({
-          ...prev,
-          longitude: parseFloat(parts[1]),
-          latitude: parseFloat(parts[2])
-        }));
-      }
-    } else {
-      api.listAois().then((res) => {
-        const aois = res.aois;
-        const matched = aois.find((a: any) => a.id === aoi_id);
-        if (matched) {
-          setViewState(prev => ({ ...prev, longitude: matched.center[0], latitude: matched.center[1] }));
+    const timer = window.setTimeout(() => {
+      void fetchDashboardMetrics();
+      void fetchDetection();
+      void fetchForecast(timeSlider);
+      void fetchMission();
+      void fetchAlerts();
+
+      if (aoi_id.startsWith('custom_')) {
+        const parts = aoi_id.split('_');
+        if (parts.length === 3) {
+          const lon = parseFloat(parts[1]);
+          const lat = parseFloat(parts[2]);
+          if (!Number.isNaN(lon) && !Number.isNaN(lat)) {
+            setViewState((prev) => ({
+              ...prev,
+              longitude: lon,
+              latitude: lat,
+            }));
+          }
         }
-      }).catch((err) => console.error('aois:', apiErrorMessage(err)));
-    }
-  }, [aoi_id, fetchDashboardMetrics, fetchDetection, fetchForecast, fetchMission, fetchAlerts]);
+        return;
+      }
+
+      api
+        .listAois()
+        .then((res) => {
+          const matched = res.aois.find((a: AoiEntry) => a.id === aoi_id);
+          if (matched) {
+            setViewState((prev) => ({ ...prev, longitude: matched.center[0], latitude: matched.center[1] }));
+          }
+        })
+        .catch((err) => console.error('aois:', apiErrorMessage(err)));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [aoi_id, fetchDashboardMetrics, fetchDetection, fetchForecast, fetchMission, fetchAlerts, timeSlider]);
 
   const handleExportMission = (format: ExportFormat) => {
     if (!aoi_id) return;
     setGeneratingMission(format);
-    window.open(api.exportUrl(aoi_id, format), '_blank');
+    window.open(api.exportUrl(aoi_id, format, spatialQuery), '_blank');
     setTimeout(() => setGeneratingMission(null), 1500);
   };
 
@@ -198,7 +239,7 @@ export const OpsDashboard: React.FC = () => {
         <h2 style={{ margin: 0, color: '#e2e8f0', fontSize: isMobile ? '1rem' : '1.5rem' }}><Activity size={isMobile ? 18 : 24} style={{ marginRight: '8px', verticalAlign: 'middle', color: '#f59e0b' }} /> OPERATIONS: {aoi_id}</h2>
         
         <div style={{ display: 'flex', gap: '0.7rem', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
-          <button 
+          <button
             onClick={() => handleExportMission('gpx')}
             disabled={!!generatingMission || !detectionData}
             style={{ padding: '0.6rem 1rem', background: '#f59e0b', color: '#1e2229', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset' }}>

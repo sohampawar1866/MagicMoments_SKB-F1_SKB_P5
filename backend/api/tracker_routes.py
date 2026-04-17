@@ -101,6 +101,9 @@ def _deterministic_density(distance_deg: float | None) -> float:
     return round(max(0.30, min(0.95, val)), 3)
 
 
+class PointCheck(BaseModel):
+    coordinate: list # [lon, lat]
+
 # Initialize DB if it doesn't exist
 if not os.path.exists(DB_FILE):
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -238,23 +241,17 @@ async def add_search(box: SearchBox):
     save_history(history)
     return record
 
+@router.post("/validate-point")
+async def validate_point(payload: PointCheck):
+    if not payload.coordinate or len(payload.coordinate) != 2:
+        raise HTTPException(status_code=400, detail="Coordinate must be [lon, lat].")
 
-@router.get("/search")
-async def get_searches():
-    return get_history()
-
-
-@router.delete("/search")
-async def clear_searches():
-    history = get_history()
-    cleared = len(history)
-    save_history([])
+    lon, lat = payload.coordinate
+    is_ocean = not globe.is_land(lat, lon)
     return {
-        "status": "ok",
-        "cleared": cleared,
-        "remaining": 0,
+        "is_ocean": is_ocean,
+        "message": "Ocean point" if is_ocean else "Land point"
     }
-
 
 @router.post("/revisit/{record_id}")
 async def reactivate_search(record_id: str):

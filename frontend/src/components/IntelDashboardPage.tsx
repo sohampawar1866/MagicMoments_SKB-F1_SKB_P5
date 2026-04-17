@@ -99,7 +99,10 @@ export const IntelDashboardPage: React.FC = () => {
     if (!filteredRecords.length) return;
     const avgLon = filteredRecords.reduce((acc, r) => acc + r.center[0], 0) / filteredRecords.length;
     const avgLat = filteredRecords.reduce((acc, r) => acc + r.center[1], 0) / filteredRecords.length;
-    setViewState((prev) => ({ ...prev, longitude: avgLon, latitude: avgLat }));
+    const frame = window.requestAnimationFrame(() => {
+      setViewState((prev) => ({ ...prev, longitude: avgLon, latitude: avgLat }));
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [filteredRecords]);
 
   const dailySeries = useMemo(() => {
