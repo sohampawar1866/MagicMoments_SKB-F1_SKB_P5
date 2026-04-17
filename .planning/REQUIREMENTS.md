@@ -13,9 +13,9 @@ Requirements for this milestone. Each maps to exactly one roadmap phase via Trac
 
 Core scaffolding that every downstream module consumes. Cannot be deferred.
 
-- [ ] **INFRA-01**: Frozen `DetectionProperties` pydantic model (`extra="forbid", frozen=True`) with fields `conf_raw: float`, `conf_adj: float`, `fraction_plastic: float`, `area_m2: float`, `age_days_est: int`, `class: str = "plastic"` (aliased via pydantic `Field(alias="class")`). Defined in `backend/core/schemas.py`. Schema round-trip test passes. Schema is git-committed and frozen at Phase 1 exit.
-- [ ] **INFRA-02**: Typed `DetectionFeatureCollection = FeatureCollection[Feature[Polygon, DetectionProperties]]` and `ForecastEnvelope`, `MissionPlan` companion schemas (using `geojson-pydantic`). All three public entry points consume/return these types exclusively.
-- [ ] **INFRA-03**: `backend/core/config.py` — pydantic-settings + single `config.yaml` driving nested `MLSettings`, `PhysicsSettings`, `MissionSettings`. Env-var overrides via `env_nested_delimiter="__"` (e.g., `ML__WEIGHTS_SOURCE=our_real`). No Hydra.
+- [x] **INFRA-01**: Frozen `DetectionProperties` pydantic model (`extra="forbid", frozen=True`) with fields `conf_raw: float`, `conf_adj: float`, `fraction_plastic: float`, `area_m2: float`, `age_days_est: int`, `class: str = "plastic"` (aliased via pydantic `Field(alias="class")`). Defined in `backend/core/schemas.py`. Schema round-trip test passes. Schema is git-committed and frozen at Phase 1 exit.
+- [x] **INFRA-02**: Typed `DetectionFeatureCollection = FeatureCollection[Feature[Polygon, DetectionProperties]]` and `ForecastEnvelope`, `MissionPlan` companion schemas (using `geojson-pydantic`). All three public entry points consume/return these types exclusively.
+- [x] **INFRA-03**: `backend/core/config.py` — pydantic-settings + single `config.yaml` driving nested `MLSettings`, `PhysicsSettings`, `MissionSettings`. Env-var overrides via `env_nested_delimiter="__"` (e.g., `ML__WEIGHTS_SOURCE=our_real`). No Hydra.
 - [ ] **INFRA-04**: Strategy-pattern weight loader `backend/ml/weights.py` — `load_weights(cfg) -> nn.Module` switching on `cfg.ml.weights_source ∈ {"dummy", "marccoru_baseline", "our_real"}`. Phase 3 weight swap is a single YAML-line change; physics/mission modules cannot observe the difference.
 - [ ] **INFRA-05**: `backend/ml/checkpoints/` ignored by git; checkpoint transfer via `kagglehub` (Kaggle → laptop cache at `~/.cache/kagglehub/`). Offline-safe: once downloaded, demo runs with no network.
 - [ ] **INFRA-06**: CLI entrypoints `python -m backend.ml <tile>`, `python -m backend.physics <detections.json>`, `python -m backend.mission <forecast.json>` for standalone module invocation (no API dependency).
@@ -100,9 +100,9 @@ Confirmed during roadmap creation 2026-04-17. All 25 v1 requirements map to exac
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete |
+| INFRA-02 | Phase 1 | Complete |
+| INFRA-03 | Phase 1 | Complete |
 | INFRA-04 | Phase 1 | Pending |
 | INFRA-05 | Phase 3 | Pending |
 | INFRA-06 | Phase 1 | Pending |

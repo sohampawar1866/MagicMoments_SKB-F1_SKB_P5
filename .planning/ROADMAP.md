@@ -37,7 +37,7 @@
 
 Plans:
 - [ ] 01-01-PLAN.md � Wave 0: env setup (.gitignore hardening, pyproject.toml + Python 3.11 pin, pip installs, Wave-0 probes for MARIDA band order / geojson-pydantic / reflectance scale / SMP init)
-- [ ] 01-02-PLAN.md � Wave 1: frozen schemas (DetectionProperties + FC + Forecast + Mission) + pydantic-settings + YAML + env override
+- [x] 01-02-PLAN.md � Wave 1: frozen schemas (DetectionProperties + FC + Forecast + Mission) + pydantic-settings + YAML + env override
 - [x] 01-03-PLAN.md � Wave 1: backend/ml/features.py (FDI/NDVI/PI + feature_stack) with Biermann 2020 unit test
 - [ ] 01-04-PLAN.md � Wave 2: DualHeadUNetpp model, strategy weight loader (dummy branch only), 3 CLI entrypoints, physics/mission stubs
 - [ ] 01-05-PLAN.md � Wave 3: backend/ml/inference.py (sliding window + cosine stitch + polygonization) + MARIDA integration test
