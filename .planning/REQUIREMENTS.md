@@ -22,7 +22,7 @@ Core scaffolding that every downstream module consumes. Cannot be deferred.
 
 ### Machine Learning / Detection (ML)
 
-- [ ] **ML-01**: `backend/ml/features.py` — pure NumPy FDI (Biermann 2020), NDVI, PI (Themistocleous 2020). Single source of truth for train+serve. Unit test: known water pixel → FDI within 0.001 of Biermann published value.
+- [x] **ML-01**: `backend/ml/features.py` — pure NumPy FDI (Biermann 2020), NDVI, PI (Themistocleous 2020). Single source of truth for train+serve. Unit test: known water pixel → FDI within 0.001 of Biermann published value.
 - [ ] **ML-02**: `backend/ml/dataset.py` — MARIDA loader reading `MARIDA/splits/{train,val,test}_X.txt` → tuples of (11-band `.tif`, `_cl.tif` mask, `_conf.tif` weight). Normalizes reflectance with S2 L2A BOA_ADD_OFFSET (−1000 DN then /10000); excludes `_conf.tif == 0` pixels from loss; handles B6/B11 resample to 10 m reference.
 - [ ] **ML-03**: `backend/ml/model.py` — `segmentation_models_pytorch.UnetPlusPlus(encoder_name="resnet18", encoder_weights="imagenet", in_channels=14, classes=1)` with SE spectral-attention block at encoder stem; **dual output heads**: binary plastic mask + fractional-cover regression. Assert `model.encoder.conv1.weight.std() > 0` to catch dead-init on `in_channels=14`.
 - [ ] **ML-04**: `backend/ml/inference.py` — `run_inference(tile_path, cfg) -> DetectionFeatureCollection`. Sliding 256×256 windows with stride-128 overlap and cosine-blended stitching; threshold + `rasterio.features.shapes` polygonization with `.buffer(0)` fix and `area_m2 >= MIN_AREA_M2` filter; pydantic-validated output. **Phase 1 runs on `dummy` weights** (lightweight random init) so the pipeline is schema-complete before real weights exist.
@@ -106,7 +106,7 @@ Confirmed during roadmap creation 2026-04-17. All 25 v1 requirements map to exac
 | INFRA-04 | Phase 1 | Pending |
 | INFRA-05 | Phase 3 | Pending |
 | INFRA-06 | Phase 1 | Pending |
-| ML-01 | Phase 1 | Pending |
+| ML-01 | Phase 1 | Complete |
 | ML-02 | Phase 3 | Pending |
 | ML-03 | Phase 1 | Pending |
 | ML-04 | Phase 1 | Pending |

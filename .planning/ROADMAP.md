@@ -36,11 +36,11 @@
 **Plans**: 5 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Wave 0: env setup (.gitignore hardening, pyproject.toml + Python 3.11 pin, pip installs, Wave-0 probes for MARIDA band order / geojson-pydantic / reflectance scale / SMP init)
-- [ ] 01-02-PLAN.md — Wave 1: frozen schemas (DetectionProperties + FC + Forecast + Mission) + pydantic-settings + YAML + env override
-- [ ] 01-03-PLAN.md — Wave 1: backend/ml/features.py (FDI/NDVI/PI + feature_stack) with Biermann 2020 unit test
-- [ ] 01-04-PLAN.md — Wave 2: DualHeadUNetpp model, strategy weight loader (dummy branch only), 3 CLI entrypoints, physics/mission stubs
-- [ ] 01-05-PLAN.md — Wave 3: backend/ml/inference.py (sliding window + cosine stitch + polygonization) + MARIDA integration test
+- [ ] 01-01-PLAN.md ï¿½ Wave 0: env setup (.gitignore hardening, pyproject.toml + Python 3.11 pin, pip installs, Wave-0 probes for MARIDA band order / geojson-pydantic / reflectance scale / SMP init)
+- [ ] 01-02-PLAN.md ï¿½ Wave 1: frozen schemas (DetectionProperties + FC + Forecast + Mission) + pydantic-settings + YAML + env override
+- [x] 01-03-PLAN.md ï¿½ Wave 1: backend/ml/features.py (FDI/NDVI/PI + feature_stack) with Biermann 2020 unit test
+- [ ] 01-04-PLAN.md ï¿½ Wave 2: DualHeadUNetpp model, strategy weight loader (dummy branch only), 3 CLI entrypoints, physics/mission stubs
+- [ ] 01-05-PLAN.md ï¿½ Wave 3: backend/ml/inference.py (sliding window + cosine stitch + polygonization) + MARIDA integration test
 
 **Risk flags**:
   - **Schema drift into Phase 2** (PITFALL C5): if `DetectionProperties` changes after Phase 2 consumers import it, their code breaks silently. **Mitigation**: schema is committed to git at Phase 1 exit; any Phase 2/3 field edit requires an explicit "schema unfreeze" decision entry in STATE.md and a re-run of `tests/unit/test_schemas.py`.
