@@ -4,11 +4,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-navy: #FAFAFA; /* Actually off-white now */
-  --color-stone: #FFFFFF; /* Pure white */
-  --color-accent-cyan: #0066FF; /* Clear elegant blue */
-  --color-accent-amber: #F5A623;
-  --color-text-main: #1A1A1A;
+  --color-primary-navy: #1e2229; /* Dark slate background */
+  --color-stone: #272c35; /* Card/panel background */
+  --color-accent-cyan: #10b981; /* Emerald green */
+  --color-accent-amber: #f59e0b; /* Gold/amber */
+  --color-text-main: #e2e8f0; /* Light text on dark */
   
   --font-syne: 'Cal Sans', sans-serif;
   --font-inter: 'Plus Jakarta Sans', sans-serif;

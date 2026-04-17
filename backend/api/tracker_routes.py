@@ -9,6 +9,8 @@ import threading
 import shutil
 from datetime import datetime
 from global_land_mask import globe
+from shapely.geometry import Polygon as ShapelyPolygon, Point as ShapelyPoint
+import numpy as np
 
 router = APIRouter(prefix="/api/v1/tracker")
 
@@ -84,11 +86,41 @@ async def add_search(box: SearchBox):
     if not box.coordinates:
         raise HTTPException(status_code=400, detail="Coordinates array cannot be empty.")
         
-    # Validation: Ensure points do not intersect landmass
+    # Validation: Ensure the ENTIRE polygon area is over ocean (not just corners)
+    # Step 1: Check all corner points
     for pt in box.coordinates:
-        # pt is [longitude, latitude]
         if globe.is_land(pt[1], pt[0]):
-            raise HTTPException(status_code=400, detail="Deployment Target Error: Sector intersects landmass. Drift analysis must be strictly oceanic.")
+            raise HTTPException(status_code=400, detail="Deployment Target Error: A corner point is on land. All vertices must be in ocean.")
+
+    # Step 2: Build polygon and sample a grid of interior points
+    closed_coords = box.coordinates + [box.coordinates[0]]  # close the ring
+    try:
+        poly = ShapelyPolygon(closed_coords)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid polygon geometry.")
+
+    if not poly.is_valid:
+        raise HTTPException(status_code=400, detail="Invalid polygon geometry — self-intersecting or degenerate.")
+
+    minx, miny, maxx, maxy = poly.bounds
+    # Sample a grid of 100x100 = 10,000 points across the bounding box
+    grid_size = 100
+    lons = np.linspace(minx, maxx, grid_size)
+    lats = np.linspace(miny, maxy, grid_size)
+
+    for lon in lons:
+        for lat in lats:
+            if poly.contains(ShapelyPoint(lon, lat)):
+                if globe.is_land(lat, lon):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Deployment Target Error: Land detected inside sector at ({lat:.4f}°N, {lon:.4f}°E). The entire polygon must be over ocean."
+                    )
+    
+    # Step 3: Also check the centroid
+    centroid = poly.centroid
+    if globe.is_land(centroid.y, centroid.x):
+        raise HTTPException(status_code=400, detail="Deployment Target Error: Center of sector is on land.")
             
     # Calculate center of box
     lon_sum = sum([pt[0] for pt in box.coordinates])
