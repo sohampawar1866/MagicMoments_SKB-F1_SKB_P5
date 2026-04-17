@@ -18,3 +18,6 @@ utm==0.7.0
 copernicusmarine==1.2.2
 cdsapi==0.6.1
 pytest==8.1.1
+
+# Phase 3 — PDF briefing export (D-09/D-10)
+reportlab>=4.2,<5.0
