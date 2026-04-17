@@ -15,6 +15,25 @@ const INITIAL_VIEW_STATE = {
   bearing: 0
 };
 
+// Sentinel-2 Red and NIR bands are 10m resolution.
+const SENTINEL2_PATCH_SIZE_METERS = 10;
+const VISUAL_PREVIEW_PATCH_SIZE_METERS = 100;
+const METERS_PER_DEG_LAT = 111320;
+
+function buildSentinelPatchSquare(lng: number, lat: number, patchMeters: number): [number, number][] {
+  const half = patchMeters / 2;
+  const latDelta = half / METERS_PER_DEG_LAT;
+  const lonScale = Math.max(Math.cos((lat * Math.PI) / 180), 1e-6);
+  const lonDelta = half / (METERS_PER_DEG_LAT * lonScale);
+
+  return [
+    [lng - lonDelta, lat + latDelta],
+    [lng + lonDelta, lat + latDelta],
+    [lng + lonDelta, lat - latDelta],
+    [lng - lonDelta, lat - latDelta],
+  ];
+}
+
 export const LandingForm: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,13 +50,27 @@ export const LandingForm: React.FC = () => {
     }
   }, [location.state]);
 
-  // Custom Drawing State (Forcing 4-point Quadrilaterals/Trapezoids)
+  // Single-point targeting; we auto-build a Sentinel-sized square patch.
   const [drawingPoints, setDrawingPoints] = useState<[number, number][]>([]);
   const [currentSelection, setCurrentSelection] = useState<any>(null);
+  const [processingSelection, setProcessingSelection] = useState<any>(null);
 
   const [coastalGeoJson, setCoastalGeoJson] = useState<any>({ type: 'FeatureCollection', features: [] });
   const [searchHistory, setSearchHistory] = useState<any[]>([]);
   const [hoverInfo, setHoverInfo] = useState<{ lng: number, lat: number, x: number, y: number, hasObject: boolean } | null>(null);
+
+  const processingBbox = React.useMemo(() => {
+    if (!processingSelection?.geometry?.coordinates?.[0]) return null;
+    const ring = processingSelection.geometry.coordinates[0].slice(0, 4) as [number, number][];
+    const lons = ring.map(([lon]) => lon);
+    const lats = ring.map(([, lat]) => lat);
+    return {
+      minLon: Math.min(...lons),
+      maxLon: Math.max(...lons),
+      minLat: Math.min(...lats),
+      maxLat: Math.max(...lats),
+    };
+  }, [processingSelection]);
 
   React.useEffect(() => {
     // Fetch global history from the backend
@@ -76,22 +109,19 @@ export const LandingForm: React.FC = () => {
       return;
     }
 
-    setDrawingPoints(prev => {
-      // If we already have a box, a new click resets the drawing board
-      if (prev.length === 4) {
-        setCurrentSelection(null);
-        return [[lng, lat]];
-      }
-
-      const newPoints = [...prev, [lng, lat] as [number, number]];
-
-      if (newPoints.length === 4) {
-        // Build the valid GeoJSON polygon (closing the loop by repeating the first point)
-        const polygon = turf.polygon([[...newPoints, newPoints[0]]]);
-        setCurrentSelection(polygon);
-      }
-
-      return newPoints;
+    setDrawingPoints(() => {
+      const nextPoints: [number, number][] = [[lng, lat]];
+      const previewSquare = buildSentinelPatchSquare(lng, lat, VISUAL_PREVIEW_PATCH_SIZE_METERS);
+      const processingSquare = buildSentinelPatchSquare(lng, lat, SENTINEL2_PATCH_SIZE_METERS);
+      setCurrentSelection(turf.polygon([[...previewSquare, previewSquare[0]]]));
+      setProcessingSelection(turf.polygon([[...processingSquare, processingSquare[0]]]));
+      setViewState(prev => ({
+        ...prev,
+        longitude: lng,
+        latitude: lat,
+        zoom: Math.max(prev.zoom, 13.5)
+      }));
+      return nextPoints;
     });
   }, []);
 
@@ -158,41 +188,42 @@ export const LandingForm: React.FC = () => {
     }),
 
     // --- DRAWING STATE UI ---
-    // Draw the borders of the shape dynamically as the user clicks
+    // Draw the auto-generated Sentinel patch border.
     new PathLayer({
       id: 'drawing-border',
-      data: drawingPoints.length > 0 ? [{ path: currentSelection ? [...drawingPoints, drawingPoints[0]] : drawingPoints }] : [],
+      data: currentSelection ? [{ path: currentSelection.geometry.coordinates[0] }] : [],
       getPath: (d: any) => d.path,
       getColor: [16, 185, 129, 255],
       getWidth: 150,
       widthMinPixels: 2
     }),
 
-    // Draw the corner nodes as glowing dots
+    // Draw the selected center point as a glowing node.
     new ScatterplotLayer({
       id: 'drawing-nodes',
       data: drawingPoints.map(p => ({ position: p })),
       getPosition: (d: any) => d.position,
       getFillColor: [16, 185, 129, 255],
-      getRadius: 300,
-      radiusMinPixels: 5
+      getRadius: 500,
+      radiusMinPixels: 7
     }),
 
-    // Fill the polygon once closed
+    // Fill the generated patch polygon.
     currentSelection && new PolygonLayer({
       id: 'drawing-fill',
-      data: [{ contour: [...drawingPoints, drawingPoints[0]] }],
-      getPolygon: (d: any) => d.contour,
+      data: [currentSelection],
+      getPolygon: (d: any) => d.geometry.coordinates[0],
       getFillColor: [16, 185, 129, 50],
       filled: true
     })
   ].filter(Boolean);
 
   const handleSubmit = async () => {
-    if (currentSelection) {
+    if (processingSelection && drawingPoints.length === 1) {
       try {
+        const patchCoordinates = processingSelection.geometry.coordinates[0].slice(0, 4);
         await axios.post('http://localhost:8000/api/v1/tracker/search', {
-          coordinates: drawingPoints
+          coordinates: patchCoordinates
         });
 
         // Fetch globally updated search history instead of local hack
@@ -206,6 +237,7 @@ export const LandingForm: React.FC = () => {
         // Reset local selection drawing state so we can see the popups
         setDrawingPoints([]);
         setCurrentSelection(null);
+        setProcessingSelection(null);
       } catch (err: any) {
         console.error(err);
         if (err.response && err.response.data && err.response.data.detail) {
@@ -215,6 +247,7 @@ export const LandingForm: React.FC = () => {
         }
         setDrawingPoints([]);
         setCurrentSelection(null);
+        setProcessingSelection(null);
       }
     }
   };
@@ -231,23 +264,33 @@ export const LandingForm: React.FC = () => {
 
           <div style={{ marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: '1.6', color: '#94a3b8' }}>
             <strong style={{ color: '#f59e0b' }}>&gt; SECTOR DEPLOYMENT</strong><br />
-            Click 4 points onto the map surface to define a target trapezoid over the ocean.
+            Click 1 ocean point. DRIFT previews 100m x 100m for visibility, but processes a 10m x 10m Sentinel-2 patch.
             <br /><br />
-            <strong>Points Logged:</strong> <span style={{ color: '#e2e8f0', fontWeight: 'bold' }}>{drawingPoints.length}/4</span>
+            <strong>Points Logged:</strong> <span style={{ color: '#e2e8f0', fontWeight: 'bold' }}>{drawingPoints.length}/1</span>
           </div>
 
-          {drawingPoints.length === 4 && (
+          {drawingPoints.length === 1 && (
             <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid #10b981', marginBottom: '1.5rem', fontSize: '0.9rem', color: '#10b981' }}>
-              <span style={{ fontWeight: 'bold' }}>[ SECTOR LOCKED ]</span><br />
-              Coordinates captured. Ready for deployment.
+              <span style={{ fontWeight: 'bold' }}>[ PATCH LOCKED ]</span><br />
+              Center locked. 100m preview + 10m processing AOI generated.
+            </div>
+          )}
+
+          {processingBbox && (
+            <div style={{ padding: '0.8rem', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', marginBottom: '1.1rem', fontFamily: 'monospace', fontSize: '0.78rem', color: '#9ce7cc', lineHeight: '1.5' }}>
+              <div style={{ color: '#10b981', fontWeight: 700, marginBottom: '0.25rem' }}>PROCESSING BBOX (10m)</div>
+              <div>minLon: {processingBbox.minLon.toFixed(7)}</div>
+              <div>minLat: {processingBbox.minLat.toFixed(7)}</div>
+              <div>maxLon: {processingBbox.maxLon.toFixed(7)}</div>
+              <div>maxLat: {processingBbox.maxLat.toFixed(7)}</div>
             </div>
           )}
 
           <button
             onClick={handleSubmit}
-            disabled={drawingPoints.length !== 4}
-            style={{ width: '100%', padding: '1rem', background: drawingPoints.length === 4 ? '#10b981' : '#38404d', color: drawingPoints.length === 4 ? '#1e2229' : '#64748b', border: 'none', borderRadius: '6px', cursor: drawingPoints.length === 4 ? 'pointer' : 'not-allowed', fontWeight: 'bold', fontSize: '1rem', textTransform: 'uppercase', transition: 'all 0.3s ease', boxShadow: drawingPoints.length === 4 ? '0 4px 6px rgba(16, 185, 129, 0.2)' : 'none' }}>
-            {drawingPoints.length === 4 ? 'Initialize AWS Deep Scan' : 'Awaiting 4-Point Target...'}
+            disabled={drawingPoints.length !== 1}
+            style={{ width: '100%', padding: '1rem', background: drawingPoints.length === 1 ? '#10b981' : '#38404d', color: drawingPoints.length === 1 ? '#1e2229' : '#64748b', border: 'none', borderRadius: '6px', cursor: drawingPoints.length === 1 ? 'pointer' : 'not-allowed', fontWeight: 'bold', fontSize: '1rem', textTransform: 'uppercase', transition: 'all 0.3s ease', boxShadow: drawingPoints.length === 1 ? '0 4px 6px rgba(16, 185, 129, 0.2)' : 'none' }}>
+            {drawingPoints.length === 1 ? 'Initialize AWS Deep Scan' : 'Awaiting Ocean Point...'}
           </button>
 
           <button
