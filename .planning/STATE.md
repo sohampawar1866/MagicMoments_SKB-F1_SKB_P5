@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-04-17T11:30:20.860Z"
+last_updated: "2026-04-17T11:35:34.832Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
-  percent: 60
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State: DRIFT / PlastiTrack — Backend Intelligence
@@ -28,11 +28,11 @@ progress:
 ## Current Position
 
 Phase: 01 (schema-foundation-dummy-inference) — EXECUTING
-Plan: 1 of 5
-**Phase:** 0 -> 1 (transition point)
-**Plan:** None yet
+Plan: 4 of 5 complete; Plan 05 next
+**Phase:** 1
+**Plan:** 01-04 complete (`1edbf87`, `9c556a4`)
 **Status:** Executing Phase 01
-**Progress:** [██████░░░░] 60%
+**Progress:** [████████░░] 80%
 
 Phase completion tracking:
 
@@ -52,6 +52,7 @@ Populated as phases complete.
 | Phase 01 P03 | 87 | 1 tasks | 5 files |
 | Phase 01 P02 | 4min | 2 tasks | 6 files |
 | Phase 01-schema-foundation-dummy-inference P01 | 15min | 4 tasks | 4 files |
+| Phase 01 P04 | 2min | 2 tasks | 12 files |
 
 ### Detection Metrics (Phase 3 exit targets — PRD Section 11.1)
 
@@ -92,6 +93,9 @@ Populated as phases complete.
 | Phase 1 weights default = `dummy` (random init), NOT marccoru baseline | Phase 1 | PITFALLS.md: marccoru weights on private Google Drive since Aug 2024 — not auto-fetchable. `dummy` branch yields schema-valid outputs immediately, unblocks Phase 2. |
 | UTM-meter Lagrangian integration, not lon/lat degrees | Phase 2 | PITFALL C4: degrees + m/s moves particles 55 km per second. UTM is the only safe integration frame. |
 | Kaggle as training target (not Colab or local) | Phase 3 | Free P100/T4 GPU; notebook already scaffolded (`kaggle.yml`, `kernel-metadata.json`). GPU must be flipped `enable_gpu: true` before Phase 3 starts. |
+| DualHeadUNetpp uses SCSE decoder attention (smp `decoder_attention_type="scse"`) rather than a custom SE encoder wrapper | Phase 1 (01-04) | Zero-LOC, cleaner, same spatial+channel squeeze-excite effect. |
+| mask_head.bias preset to 0.5 in the dummy weight branch | Phase 1 (01-04) | Without this shift, sigmoid(random-logit) is noisy around 0.5 and the Plan 05 threshold+area filter could drop every polygon, breaking the strict `n > 0` integration assertion. |
+| ml/cli.py lazy-imports run_inference inside main() | Phase 1 (01-04) | Plan 05 (Wave 3) has not yet committed `backend/ml/inference.py`. Lazy import keeps `python -m backend.ml --help` working in Wave 2. |
 | Euler Lagrangian tracker, alpha=0.02 windage, no Stokes drift | Phase 2 | PRD Section 4: 72 h horizons tolerate it. OpenDrift is overkill for 48 h build. |
 | Biofouling: synthetic NIR x [0.5, 1.0] augmentation (40% of positives, on plastic-masked pixels only) + `conf_adj = conf_raw * exp(-age/30)` inference decay | Phase 3 | Defensible without over-claiming (PRD Section 8.4). |
 | Schema freeze at end of Phase 1 | Phase 1 | PITFALL C5: schema drift between dummy and real output is the #1 cost-of-rewrite bug class. Any post-Phase-1 field edit requires explicit unfreeze. |
@@ -133,11 +137,11 @@ None at roadmap-complete state. Phase 1 is unblocked and ready to plan.
 
 ### Last Action
 
-Roadmap created (`/gsd:new-project` orchestrator dispatched roadmapper; 3-phase structure approved; traceability validated at 25/25 mapped).
+Completed Plan 01-04 (Model + weight loader + 3 CLIs + physics/mission stubs). Commits: `1edbf87`, `9c556a4`. Requirements closed: INFRA-04, INFRA-06, ML-03.
 
 ### Next Action
 
-Run `/gsd:plan-phase 1` to decompose Phase 1 into executable plans. Start with the schema freeze (the unblocker for all Phase 2 parallel work).
+Execute Plan 01-05 (inference orchestration — `backend/ml/inference.py::run_inference`). This is the final Wave 3 piece that completes Phase 1 and lets the full CLI chain `python -m backend.ml | backend.physics | backend.mission` round-trip end-to-end on a real MARIDA tile.
 
 ### Files to Remember
 

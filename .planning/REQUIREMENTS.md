@@ -16,15 +16,15 @@ Core scaffolding that every downstream module consumes. Cannot be deferred.
 - [x] **INFRA-01**: Frozen `DetectionProperties` pydantic model (`extra="forbid", frozen=True`) with fields `conf_raw: float`, `conf_adj: float`, `fraction_plastic: float`, `area_m2: float`, `age_days_est: int`, `class: str = "plastic"` (aliased via pydantic `Field(alias="class")`). Defined in `backend/core/schemas.py`. Schema round-trip test passes. Schema is git-committed and frozen at Phase 1 exit.
 - [x] **INFRA-02**: Typed `DetectionFeatureCollection = FeatureCollection[Feature[Polygon, DetectionProperties]]` and `ForecastEnvelope`, `MissionPlan` companion schemas (using `geojson-pydantic`). All three public entry points consume/return these types exclusively.
 - [x] **INFRA-03**: `backend/core/config.py` — pydantic-settings + single `config.yaml` driving nested `MLSettings`, `PhysicsSettings`, `MissionSettings`. Env-var overrides via `env_nested_delimiter="__"` (e.g., `ML__WEIGHTS_SOURCE=our_real`). No Hydra.
-- [ ] **INFRA-04**: Strategy-pattern weight loader `backend/ml/weights.py` — `load_weights(cfg) -> nn.Module` switching on `cfg.ml.weights_source ∈ {"dummy", "marccoru_baseline", "our_real"}`. Phase 3 weight swap is a single YAML-line change; physics/mission modules cannot observe the difference.
+- [x] **INFRA-04**: Strategy-pattern weight loader `backend/ml/weights.py` — `load_weights(cfg) -> nn.Module` switching on `cfg.ml.weights_source ∈ {"dummy", "marccoru_baseline", "our_real"}`. Phase 3 weight swap is a single YAML-line change; physics/mission modules cannot observe the difference.
 - [ ] **INFRA-05**: `backend/ml/checkpoints/` ignored by git; checkpoint transfer via `kagglehub` (Kaggle → laptop cache at `~/.cache/kagglehub/`). Offline-safe: once downloaded, demo runs with no network.
-- [ ] **INFRA-06**: CLI entrypoints `python -m backend.ml <tile>`, `python -m backend.physics <detections.json>`, `python -m backend.mission <forecast.json>` for standalone module invocation (no API dependency).
+- [x] **INFRA-06**: CLI entrypoints `python -m backend.ml <tile>`, `python -m backend.physics <detections.json>`, `python -m backend.mission <forecast.json>` for standalone module invocation (no API dependency).
 
 ### Machine Learning / Detection (ML)
 
 - [x] **ML-01**: `backend/ml/features.py` — pure NumPy FDI (Biermann 2020), NDVI, PI (Themistocleous 2020). Single source of truth for train+serve. Unit test: known water pixel → FDI within 0.001 of Biermann published value.
 - [ ] **ML-02**: `backend/ml/dataset.py` — MARIDA loader reading `MARIDA/splits/{train,val,test}_X.txt` → tuples of (11-band `.tif`, `_cl.tif` mask, `_conf.tif` weight). Normalizes reflectance with S2 L2A BOA_ADD_OFFSET (−1000 DN then /10000); excludes `_conf.tif == 0` pixels from loss; handles B6/B11 resample to 10 m reference.
-- [ ] **ML-03**: `backend/ml/model.py` — `segmentation_models_pytorch.UnetPlusPlus(encoder_name="resnet18", encoder_weights="imagenet", in_channels=14, classes=1)` with SE spectral-attention block at encoder stem; **dual output heads**: binary plastic mask + fractional-cover regression. Assert `model.encoder.conv1.weight.std() > 0` to catch dead-init on `in_channels=14`.
+- [x] **ML-03**: `backend/ml/model.py` — `segmentation_models_pytorch.UnetPlusPlus(encoder_name="resnet18", encoder_weights="imagenet", in_channels=14, classes=1)` with SE spectral-attention block at encoder stem; **dual output heads**: binary plastic mask + fractional-cover regression. Assert `model.encoder.conv1.weight.std() > 0` to catch dead-init on `in_channels=14`.
 - [ ] **ML-04**: `backend/ml/inference.py` — `run_inference(tile_path, cfg) -> DetectionFeatureCollection`. Sliding 256×256 windows with stride-128 overlap and cosine-blended stitching; threshold + `rasterio.features.shapes` polygonization with `.buffer(0)` fix and `area_m2 >= MIN_AREA_M2` filter; pydantic-validated output. **Phase 1 runs on `dummy` weights** (lightweight random init) so the pipeline is schema-complete before real weights exist.
 - [ ] **ML-05**: `backend/ml/train.py` — Kaggle-ready 25-epoch training loop: Adam 1e-4, cosine schedule, Dice + pos-weighted BCE on binary head (pos_weight ≈ 40 to counter ~2% plastic pixels), MSE ×0.3 on fraction head. Uses `_conf.tif` as per-pixel weight. No `torch.compile`, no `bfloat16`. Saves best-IoU checkpoint via `kagglehub.model_upload`.
 - [ ] **ML-06**: Sub-pixel fraction regression head — training data augmented with alpha-blended plastic×water at α ∈ {0.05, 0.1, 0.2, 0.4}. Target: **MAE ≤ 0.15** on synthetic held-out val. Populates `fraction_plastic` at inference.
@@ -103,12 +103,12 @@ Confirmed during roadmap creation 2026-04-17. All 25 v1 requirements map to exac
 | INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 1 | Complete |
 | INFRA-03 | Phase 1 | Complete |
-| INFRA-04 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Complete |
 | INFRA-05 | Phase 3 | Pending |
-| INFRA-06 | Phase 1 | Pending |
+| INFRA-06 | Phase 1 | Complete |
 | ML-01 | Phase 1 | Complete |
 | ML-02 | Phase 3 | Pending |
-| ML-03 | Phase 1 | Pending |
+| ML-03 | Phase 1 | Complete |
 | ML-04 | Phase 1 | Pending |
 | ML-05 | Phase 3 | Pending |
 | ML-06 | Phase 3 | Pending |
