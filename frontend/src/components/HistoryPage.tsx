@@ -20,8 +20,8 @@ export const HistoryPage = () => {
     return (
         <div style={{ padding: '40px', background: '#1e2229', minHeight: '100vh', color: '#e2e8f0', boxSizing: 'border-box', fontFamily: 'Inter, sans-serif' }}>
             <h2 style={{ color: '#f59e0b', marginBottom: '1.5rem', fontWeight: 'bold' }}>Sector Deployment History</h2>
-            <button 
-                onClick={() => navigate('/drift')} 
+            <button
+                onClick={() => navigate('/drift')}
                 style={{ background: '#272c35', color: '#e2e8f0', border: '1px solid #38404d', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', marginBottom: '30px', fontWeight: 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
             >
                 &larr; Return to Dashboard
@@ -38,7 +38,7 @@ export const HistoryPage = () => {
                                 <strong style={{ color: '#cbd5e1' }}>Coordinates:</strong> {item.center[1].toFixed(4)}&deg;N, {item.center[0].toFixed(4)}&deg;E
                             </div>
                         </div>
-                        <button 
+                        <button
                             onClick={() => handleRevisit(item.id)}
                             style={{ padding: '12px 24px', background: '#10b981', color: '#1e2229', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}
                         >

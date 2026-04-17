@@ -211,10 +211,10 @@ export const LandingForm: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100vh', backgroundColor: '#1e2229', fontFamily: 'Inter, sans-serif' }}>
-      
+
       {/* Sidebar Panel */}
       <div style={{ width: '400px', height: '100%', backgroundColor: '#272c35', borderRight: '1px solid #38404d', display: 'flex', flexDirection: 'column', zIndex: 10, boxShadow: '2px 0 10px rgba(0,0,0,0.2)' }}>
-        
+
         {/* Main Control Section */}
         <div style={{ padding: '2rem', borderBottom: '1px solid #38404d' }}>
           <h1 style={{ margin: '0 0 1rem 0', fontSize: '1.8rem', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '2px' }}>DRIFT_OS v2.0</h1>
@@ -223,7 +223,7 @@ export const LandingForm: React.FC = () => {
             <strong style={{ color: '#f59e0b' }}>&gt; SECTOR DEPLOYMENT</strong><br />
             Click 4 points onto the map surface to define a target trapezoid over the ocean.
             <br /><br />
-            <strong>Points Logged:</strong> <span style={{color: '#e2e8f0', fontWeight: 'bold'}}>{drawingPoints.length}/4</span>
+            <strong>Points Logged:</strong> <span style={{ color: '#e2e8f0', fontWeight: 'bold' }}>{drawingPoints.length}/4</span>
           </div>
 
           {drawingPoints.length === 4 && (
@@ -253,14 +253,14 @@ export const LandingForm: React.FC = () => {
         {/* Threat Legend Section */}
         <div style={{ padding: '2rem', flexGrow: 1 }}>
           <h4 style={{ margin: '0 0 1rem 0', color: '#94a3b8', textTransform: 'uppercase', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px' }}>Threat Legend & Analytics</h4>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '0.9rem', color: '#cbd5e1' }}>
-            <div style={{ width: '16px', height: '16px', background: '#f59e0b', borderRadius: '4px', boxShadow: '0 0 5px #f59e0b' }}></div> 
+            <div style={{ width: '16px', height: '16px', background: '#f59e0b', borderRadius: '4px', boxShadow: '0 0 5px #f59e0b' }}></div>
             <span>Critical Coastline Accumulation</span>
           </div>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '0.9rem', color: '#cbd5e1' }}>
-            <div style={{ width: '20px', height: '3px', background: 'linear-gradient(90deg, #10b981, #f59e0b)' }}></div> 
+            <div style={{ width: '20px', height: '3px', background: 'linear-gradient(90deg, #10b981, #f59e0b)' }}></div>
             <span>Flat Vector: Predictive Drift Path</span>
           </div>
         </div>

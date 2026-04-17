@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { motion } from 'framer-motion';
 import Lenis from 'lenis';
+import { Map, Satellite, Ship, Waves, type LucideIcon } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -120,26 +121,26 @@ export const NewLandingPage: React.FC = () => {
 
   const features = [
     {
-      icon: '🛰️',
+      icon: Satellite,
       title: 'Satellite-Powered Detection',
       desc: 'Queries the AWS Earth Search STAC API for Sentinel-2 L2A multi-spectral imagery (NIR, Red, SWIR bands) to identify sub-pixel macroplastic concentrations invisible to the naked eye.',
     },
     {
-      icon: '🌊',
+      icon: Waves,
       title: 'Lagrangian Drift Forecasting',
       desc: 'Predicts where detected debris will travel over 24h, 48h, and 72h windows using CMEMS ocean current vectors and ERA5 wind data fused through Euler-step particle tracking.',
     },
     {
-      icon: '🗺️',
+      icon: Map,
       title: 'Interactive AOI Mapping',
       desc: 'Click 4 points on a dark-matter basemap to define a target ocean sector. A 100×100 grid land-check ensures your polygon is strictly over water before analysis begins.',
     },
     {
-      icon: '🚢',
+      icon: Ship,
       title: 'Cleanup Mission Planner',
       desc: 'Generates optimal Coast Guard vessel routes using TSP heuristics over high-density hotspots, and exports the route as a downloadable GPX file for direct nav-system integration.',
     },
-  ];
+  ] as Array<{ icon: LucideIcon; title: string; desc: string }>;
 
   const steps = [
     {
@@ -236,7 +237,7 @@ export const NewLandingPage: React.FC = () => {
           >
             <p className="text-xs font-inter uppercase tracking-[0.3em] text-accent-amber mb-6">The Problem</p>
             <h2 className="text-4xl md:text-7xl font-syne font-normal tracking-tight mb-10">
-              8 million tons of plastic <span className="text-accent-amber italic">enter</span> our oceans<br/>every single year.
+              8 million tons of plastic <span className="text-accent-amber italic">enter</span> our oceans<br />every single year.
             </h2>
             <div className="grid md:grid-cols-2 gap-16 text-lg md:text-xl font-inter font-light leading-relaxed text-text-main/70">
               <p>
@@ -306,7 +307,9 @@ export const NewLandingPage: React.FC = () => {
                 variants={fadeUp}
                 className="group bg-stone rounded-2xl p-8 border border-white/5 hover:border-accent-cyan/30 transition-colors duration-500"
               >
-                <div className="text-4xl mb-5">{f.icon}</div>
+                <div className="mb-5">
+                  <f.icon className="h-10 w-10 text-accent-cyan" strokeWidth={1.8} />
+                </div>
                 <h3 className="text-xl font-syne font-medium mb-3 text-text-main group-hover:text-accent-amber transition-colors duration-300">{f.title}</h3>
                 <p className="text-sm font-inter font-light leading-relaxed text-text-main/60">{f.desc}</p>
               </motion.div>
