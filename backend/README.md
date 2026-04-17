@@ -104,3 +104,7 @@ Our system uses **AWS Open Data (STAC API)** to fetch Sentinel-2 imagery. We've 
     *   **First Run (or new data available):** We look in `backend/data/cache/<aoi_id>`. If we don't have the files for the newest ID, we fetch the large raw `.tif` bands from AWS S3, save them in the cache folder, and hand them to the AI model.
     *   **Subsequent Runs:** We query STAC, but notice we already downloaded those specific images previously. We skip downloading entirely and feed the local files straight into the AI model, making the route incredibly fast.
     *   **No Internet Emergency:** If the STAC API times out (no Wi-Fi during pitching), our code drops into a **Fallback Mode**, silently grabs the newest files existing in the local cache, and runs the AI pipeline on those. Your demo won't crash!
+
+---
+
+> Last updated: April 17, 2026 — Backend routing complete.
