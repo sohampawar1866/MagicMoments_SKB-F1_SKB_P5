@@ -7,6 +7,8 @@ import * as turf from '@turf/turf';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
 const INITIAL_VIEW_STATE = {
   longitude: 80.0,
   latitude: 18.0,
@@ -38,7 +40,14 @@ export const LandingForm: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 1024);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   React.useEffect(() => {
     if (location.state && location.state.highlightedId) {
@@ -74,12 +83,12 @@ export const LandingForm: React.FC = () => {
 
   React.useEffect(() => {
     // Fetch global history from the backend
-    axios.get('http://localhost:8000/api/v1/tracker/search').then(res => {
+    axios.get(`${API_BASE_URL}/api/v1/tracker/search`).then(res => {
       setSearchHistory(res.data);
     }).catch(console.error);
 
     // Fetch dynamic coastline
-    axios.get('http://localhost:8000/api/v1/tracker/coastline').then(res => {
+    axios.get(`${API_BASE_URL}/api/v1/tracker/coastline`).then(res => {
       setCoastalGeoJson(res.data);
     }).catch(console.error);
   }, []);
@@ -95,7 +104,7 @@ export const LandingForm: React.FC = () => {
     const [lng, lat] = info.coordinate;
 
     try {
-      const validationRes = await axios.post('http://localhost:8000/api/v1/tracker/validate-point', {
+      const validationRes = await axios.post(`${API_BASE_URL}/api/v1/tracker/validate-point`, {
         coordinate: [lng, lat]
       });
 
@@ -216,16 +225,16 @@ export const LandingForm: React.FC = () => {
     if (processingSelection && drawingPoints.length === 1) {
       try {
         const patchCoordinates = processingSelection.geometry.coordinates[0].slice(0, 4);
-        await axios.post('http://localhost:8000/api/v1/tracker/search', {
+        await axios.post(`${API_BASE_URL}/api/v1/tracker/search`, {
           coordinates: patchCoordinates
         });
 
         // Fetch globally updated search history instead of local hack
-        const histRes = await axios.get('http://localhost:8000/api/v1/tracker/search');
+        const histRes = await axios.get(`${API_BASE_URL}/api/v1/tracker/search`);
         setSearchHistory(histRes.data);
 
         // Let's reload coastline intensity to respond instantly to the backend update
-        const coastRes = await axios.get('http://localhost:8000/api/v1/tracker/coastline');
+        const coastRes = await axios.get(`${API_BASE_URL}/api/v1/tracker/coastline`);
         setCoastalGeoJson(coastRes.data);
 
         // Reset local selection drawing state so we can see the popups
@@ -247,18 +256,18 @@ export const LandingForm: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100vh', backgroundColor: '#1e2229', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', width: '100%', minHeight: '100vh', backgroundColor: '#1e2229', fontFamily: 'Inter, sans-serif' }}>
 
       {/* Sidebar Panel */}
-      <div style={{ width: '400px', height: '100%', backgroundColor: '#272c35', borderRight: '1px solid #38404d', display: 'flex', flexDirection: 'column', zIndex: 10, boxShadow: '2px 0 10px rgba(0,0,0,0.2)' }}>
+      <div style={{ width: isMobile ? '100%' : '400px', minHeight: isMobile ? 'auto' : '100%', backgroundColor: '#272c35', borderRight: isMobile ? 'none' : '1px solid #38404d', borderBottom: isMobile ? '1px solid #38404d' : 'none', display: 'flex', flexDirection: 'column', zIndex: 10, boxShadow: isMobile ? '0 2px 10px rgba(0,0,0,0.2)' : '2px 0 10px rgba(0,0,0,0.2)' }}>
 
         {/* Main Control Section */}
-        <div style={{ padding: '2rem', borderBottom: '1px solid #38404d' }}>
-          <h1 style={{ margin: '0 0 1rem 0', fontSize: '1.8rem', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '2px' }}>DRIFT_OS v2.0</h1>
+        <div style={{ padding: isMobile ? '1rem' : '2rem', borderBottom: '1px solid #38404d' }}>
+          <h1 style={{ margin: '0 0 1rem 0', fontSize: isMobile ? '1.2rem' : '1.8rem', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: isMobile ? '1px' : '2px' }}>D.R.I.F.T._OS v2.0</h1>
 
           <div style={{ marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: '1.6', color: '#94a3b8' }}>
             <strong style={{ color: '#f59e0b' }}>&gt; SECTOR DEPLOYMENT</strong><br />
-            Click 1 ocean point. DRIFT previews 100m x 100m for visibility, but processes a 10m x 10m Sentinel-2 patch.
+            Click 1 ocean point. D.R.I.F.T. previews 100m x 100m for visibility, but processes a 10m x 10m Sentinel-2 patch.
             <br /><br />
             <strong>Points Logged:</strong> <span style={{ color: '#e2e8f0', fontWeight: 'bold' }}>{drawingPoints.length}/1</span>
           </div>
@@ -271,7 +280,7 @@ export const LandingForm: React.FC = () => {
           )}
 
           {processingBbox && (
-            <div style={{ padding: '0.8rem', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', marginBottom: '1.1rem', fontFamily: 'monospace', fontSize: '0.78rem', color: '#9ce7cc', lineHeight: '1.5' }}>
+            <div style={{ padding: '0.8rem', background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '6px', marginBottom: '1.1rem', fontFamily: 'monospace', fontSize: isMobile ? '0.72rem' : '0.78rem', color: '#9ce7cc', lineHeight: '1.5', overflowX: 'auto' }}>
               <div style={{ color: '#10b981', fontWeight: 700, marginBottom: '0.25rem' }}>PROCESSING BBOX (10m)</div>
               <div>minLon: {processingBbox.minLon.toFixed(7)}</div>
               <div>minLat: {processingBbox.minLat.toFixed(7)}</div>
@@ -307,7 +316,7 @@ export const LandingForm: React.FC = () => {
         </div>
 
         {/* Threat Legend Section */}
-        <div style={{ padding: '2rem', flexGrow: 1 }}>
+        <div style={{ padding: isMobile ? '1rem' : '2rem', flexGrow: 1 }}>
           <h4 style={{ margin: '0 0 1rem 0', color: '#94a3b8', textTransform: 'uppercase', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px' }}>Threat Legend & Analytics</h4>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '0.9rem', color: '#cbd5e1' }}>
@@ -323,7 +332,7 @@ export const LandingForm: React.FC = () => {
       </div>
 
       {/* Map Content Section */}
-      <div style={{ position: 'relative', flexGrow: 1, height: '100%' }}>
+      <div style={{ position: 'relative', flexGrow: 1, height: isMobile ? '62vh' : '100vh', minHeight: isMobile ? 420 : undefined }}>
         <DeckGL
           initialViewState={viewState}
           onViewStateChange={({ viewState: nextViewState }) => setViewState(nextViewState as typeof INITIAL_VIEW_STATE)}

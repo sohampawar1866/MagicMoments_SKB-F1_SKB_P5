@@ -63,10 +63,17 @@ const toPercent = (v: number) => `${(v * 100).toFixed(1)}%`;
 
 export const IntelDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024);
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [dayWindow, setDayWindow] = useState<'7' | '30' | 'all'>('30');
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 1024);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -193,12 +200,13 @@ export const IntelDashboardPage: React.FC = () => {
   }, [filteredRecords]);
 
   return (
-    <main style={{ minHeight: '100vh', background: '#1e2229', color: '#e2e8f0', fontFamily: 'Inter, sans-serif', padding: '1.2rem 1.6rem 2rem 1.6rem', overflowX: 'hidden' }}>
+    <main style={{ minHeight: '100vh', background: '#1e2229', color: '#e2e8f0', fontFamily: 'Inter, sans-serif', padding: isMobile ? '0.9rem' : '1.2rem 1.6rem 2rem 1.6rem', overflowX: 'hidden' }}>
         <header
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexWrap: 'wrap',
             gap: 16,
             marginBottom: 16,
             borderBottom: '1px solid #38404d',
@@ -206,13 +214,13 @@ export const IntelDashboardPage: React.FC = () => {
           }}
         >
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.5rem', letterSpacing: '0.03em' }}>Operational Intelligence Dashboard</h1>
-            <div style={{ color: '#9aa7ba', marginTop: 6, fontSize: 13 }}>
+            <h1 className="type-page-title" style={{ margin: 0, letterSpacing: '0.03em' }}>Operational Intelligence Dashboard</h1>
+            <div className="type-body-md" style={{ color: '#9aa7ba', marginTop: 6 }}>
               Day-wise deployment analytics, heat signatures, and hotspot ranking from tracker history.
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
             <select
               value={dayWindow}
               onChange={(e) => setDayWindow(e.target.value as '7' | '30' | 'all')}
@@ -223,6 +231,7 @@ export const IntelDashboardPage: React.FC = () => {
                 borderRadius: 8,
                 padding: '8px 10px',
                 fontWeight: 600,
+                minWidth: isMobile ? '100%' : undefined,
               }}
             >
               <option value="7">Last 7 days</option>
@@ -240,6 +249,7 @@ export const IntelDashboardPage: React.FC = () => {
                 padding: '8px 12px',
                 fontWeight: 700,
                 cursor: 'pointer',
+                flex: isMobile ? 1 : undefined,
               }}
             >
               Open Map
@@ -254,6 +264,7 @@ export const IntelDashboardPage: React.FC = () => {
                 padding: '8px 12px',
                 fontWeight: 700,
                 cursor: 'pointer',
+                flex: isMobile ? 1 : undefined,
               }}
             >
               History
@@ -271,6 +282,8 @@ export const IntelDashboardPage: React.FC = () => {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
+                flex: isMobile ? 1 : undefined,
+                justifyContent: 'center',
               }}
             >
               <ArrowLeft size={14} /> Home
@@ -279,7 +292,7 @@ export const IntelDashboardPage: React.FC = () => {
         </header>
 
         <section id="overview" style={{ marginBottom: 18 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
             {[
               { label: 'Deployments', value: kpi.total.toString() },
               { label: 'Avg Density', value: toPercent(kpi.avgDensity) },
@@ -303,13 +316,14 @@ export const IntelDashboardPage: React.FC = () => {
         </section>
 
         <section id="map-intel" style={{ marginBottom: 18 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 2fr) minmax(280px, 1fr)', gap: 12 }}>
             <div style={{ background: '#262f3b', border: '1px solid #3b4758', borderRadius: 12, overflow: 'hidden' }}>
               <div style={{ padding: '10px 12px', borderBottom: '1px solid #3b4758', fontWeight: 700, color: '#d5dfeb' }}>
                 Heat Signature Map
               </div>
-              <div style={{ height: 430 }}>
+              <div style={{ height: isMobile ? 320 : 430, position: 'relative' }}>
                 <DeckGL
+                  style={{ position: 'absolute', inset: '0' }}
                   initialViewState={viewState}
                   onViewStateChange={({ viewState: nextViewState }) => setViewState(nextViewState as typeof INITIAL_VIEW_STATE)}
                   controller={true}
@@ -332,7 +346,7 @@ export const IntelDashboardPage: React.FC = () => {
               {kpi.total === 0 ? (
                 <div style={{ color: '#8f9caf', fontSize: 13 }}>No deployments for selected window.</div>
               ) : (
-                <div style={{ height: 260 }}>
+                <div style={{ height: 260, minWidth: 0 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={riskSplit} dataKey="value" nameKey="name" outerRadius={88} innerRadius={45}>
@@ -358,7 +372,7 @@ export const IntelDashboardPage: React.FC = () => {
         </section>
 
         <section id="day-trends" style={{ marginBottom: 18 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', gap: 12 }}>
             <div style={{ background: '#262f3b', border: '1px solid #3b4758', borderRadius: 12, padding: 12 }}>
               <div style={{ fontWeight: 700, marginBottom: 10 }}>Average Density By Day</div>
               <div style={{ height: 260 }}>
@@ -450,7 +464,7 @@ export const IntelDashboardPage: React.FC = () => {
                         borderRadius: 8,
                         padding: '10px 12px',
                         display: 'grid',
-                        gridTemplateColumns: '1.3fr 1fr 1fr 1fr',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                         gap: 8,
                         alignItems: 'center',
                       }}

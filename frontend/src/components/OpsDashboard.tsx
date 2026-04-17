@@ -21,6 +21,7 @@ const INITIAL_VIEW_STATE = {
 export const OpsDashboard: React.FC = () => {
   const { aoi_id } = useParams<{ aoi_id: string }>();
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024);
 
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [detectionData, setDetectionData] = useState<any>(null);
@@ -29,6 +30,12 @@ export const OpsDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [timeSlider, setTimeSlider] = useState(24);
   const [generatingMission, setGeneratingMission] = useState(false);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 1024);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const fetchDetection = React.useCallback(async () => {
     setLoading(true);
@@ -128,28 +135,28 @@ export const OpsDashboard: React.FC = () => {
   ].filter(Boolean);
 
   return (
-    <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem', minHeight: '100vh', background: '#1e2229', color: '#e2e8f0', fontFamily: 'Inter, sans-serif' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #38404d', paddingBottom: '1rem' }}>
-        <h2 style={{ margin: 0, color: '#e2e8f0' }}><Activity size={24} style={{ marginRight: '8px', verticalAlign: 'middle', color: '#f59e0b' }} /> OPERATIONS: {aoi_id}</h2>
+    <div style={{ padding: isMobile ? '1rem' : '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '100vh', background: '#1e2229', color: '#e2e8f0', fontFamily: 'Inter, sans-serif' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.9rem', borderBottom: '1px solid #38404d', paddingBottom: '1rem' }}>
+        <h2 style={{ margin: 0, color: '#e2e8f0', fontSize: isMobile ? '1rem' : '1.5rem' }}><Activity size={isMobile ? 18 : 24} style={{ marginRight: '8px', verticalAlign: 'middle', color: '#f59e0b' }} /> OPERATIONS: {aoi_id}</h2>
         
-        <div style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.7rem', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
           <button 
             onClick={handleExportMission}
             disabled={generatingMission || !detectionData}
-            style={{ padding: '0.6rem 1.5rem', background: '#f59e0b', color: '#1e2229', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
+            style={{ padding: '0.6rem 1rem', background: '#f59e0b', color: '#1e2229', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset' }}>
             <CheckCircle size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
             {generatingMission ? 'GENERATING...' : 'EXPORT GPX MISSION'}
           </button>
           
-          <button onClick={() => navigate('/drift')} style={{ padding: '0.6rem 1.5rem', background: '#272c35', color: '#cbd5e1', border: '1px solid #475569', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+          <button onClick={() => navigate('/drift')} style={{ padding: '0.6rem 1rem', background: '#272c35', color: '#cbd5e1', border: '1px solid #475569', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 140 : 'unset' }}>
             ABORT & RETURN
           </button>
         </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: '1rem' }}>
         <div style={{ background: '#272c35', borderRadius: '8px', border: '1px solid #38404d', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
-          <div style={{ position: 'relative', flexGrow: 1, minHeight: '600px', backgroundColor: '#1e2229', borderRadius: '8px 8px 0 0', overflow: 'hidden' }}>
+          <div style={{ position: 'relative', flexGrow: 1, minHeight: isMobile ? '380px' : '600px', backgroundColor: '#1e2229', borderRadius: '8px 8px 0 0', overflow: 'hidden' }}>
             <DeckGL
               initialViewState={viewState}
               onViewStateChange={({ viewState: nextViewState }) => setViewState(nextViewState as typeof INITIAL_VIEW_STATE)}
@@ -161,19 +168,19 @@ export const OpsDashboard: React.FC = () => {
             </DeckGL>
           </div>
           
-          <div style={{ padding: '1.5rem', display: 'flex', gap: '2rem', alignItems: 'center', background: '#2a2f38', borderRadius: '0 0 8px 8px', borderTop: '1px solid #38404d' }}>
-            <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ padding: isMobile ? '1rem' : '1.5rem', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1rem', alignItems: isMobile ? 'stretch' : 'center', background: '#2a2f38', borderRadius: '0 0 8px 8px', borderTop: '1px solid #38404d' }}>
+            <div style={{ flexGrow: 1, display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.8rem' }}>
               <label style={{ color: '#cbd5e1', fontWeight: 'bold' }}>T+ FORECAST (HOURS): <span style={{ color: '#10b981' }}>{timeSlider}h</span></label>
-              <input type="range" min="0" max="72" step="24" value={timeSlider} onChange={e => setTimeSlider(Number(e.target.value))} style={{ flexGrow: 1, accentColor: '#10b981' }} />
+              <input type="range" min="0" max="72" step="24" value={timeSlider} onChange={e => setTimeSlider(Number(e.target.value))} style={{ flexGrow: 1, width: '100%', accentColor: '#10b981' }} />
             </div>
-            <button disabled={loading} onClick={fetchForecast} style={{ padding: '0.75rem 2rem', background: '#10b981', color: '#1e2229', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}>
-              CALCULATE DRIFT PHYSICS
+            <button disabled={loading} onClick={fetchForecast} style={{ padding: '0.75rem 1.2rem', background: '#10b981', color: '#1e2229', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)', width: isMobile ? '100%' : 'auto' }}>
+              CALCULATE D.R.I.F.T. PHYSICS
             </button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div style={{ background: '#272c35', borderRadius: '8px', padding: '1.5rem', border: '1px solid #38404d', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ background: '#272c35', borderRadius: '8px', padding: isMobile ? '1rem' : '1.5rem', border: '1px solid #38404d', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
             <h3 style={{ margin: '0 0 1rem 0', color: '#e2e8f0', fontWeight: 'bold' }}>RADAR LOGS</h3>
             
             <div style={{ padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', borderLeft: '3px solid #f59e0b', marginBottom: '1rem' }}>
@@ -189,13 +196,13 @@ export const OpsDashboard: React.FC = () => {
               <h4 style={{ margin: '0 0 0.5rem 0', color: '#10b981' }}>Simulation Output</h4>
               {loading ? <p style={{ margin: 0, color: '#94a3b8' }}>Processing vectors...</p> : (
                 <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#cbd5e1' }}>
-                  {forecastData ? `Generated ${forecastData.features?.length || 0} future drift paths.` : 'No active simulation.'}
+                  {forecastData ? `Generated ${forecastData.features?.length || 0} future D.R.I.F.T. paths.` : 'No active simulation.'}
                 </div>
               )}
             </div>
           </div>
 
-          <div style={{ background: '#272c35', borderRadius: '8px', padding: '1.5rem', border: '1px solid #38404d', flexGrow: 1, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
+          <div style={{ background: '#272c35', borderRadius: '8px', padding: isMobile ? '1rem' : '1.5rem', border: '1px solid #38404d', flexGrow: 1, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
             <h3 style={{ margin: '0 0 1.5rem 0', color: '#e2e8f0', fontWeight: 'bold' }}><BarChart2 size={18} style={{ marginRight: '8px', verticalAlign: 'middle', color: '#10b981' }} /> PLASTIC DEGRADATION MODEL</h3>
             {metricsData && metricsData.biofouling_chart_data && metricsData.biofouling_chart_data.length > 0 ? (
               <div style={{ height: '250px' }}>

@@ -1,9 +1,10 @@
-import type { ComponentType, ReactElement } from 'react';
+import { lazy, type ComponentType } from 'react';
 import { Gauge, History, Map, Radar } from 'lucide-react';
-import { LandingForm } from '../components/LandingForm';
-import { OpsDashboard } from '../components/OpsDashboard';
-import { HistoryPage } from '../components/HistoryPage';
-import { IntelDashboardPage } from '../components/IntelDashboardPage';
+
+const LandingForm = lazy(() => import('../components/LandingForm').then((mod) => ({ default: mod.LandingForm })));
+const OpsDashboard = lazy(() => import('../components/OpsDashboard').then((mod) => ({ default: mod.OpsDashboard })));
+const HistoryPage = lazy(() => import('../components/HistoryPage').then((mod) => ({ default: mod.HistoryPage })));
+const IntelDashboardPage = lazy(() => import('../components/IntelDashboardPage').then((mod) => ({ default: mod.IntelDashboardPage })));
 
 type NavConfig = {
   label: string;
@@ -16,7 +17,7 @@ export type DriftRouteConfig = {
   key: string;
   index?: boolean;
   path?: string;
-  element: ReactElement;
+  component: ComponentType;
   nav?: NavConfig;
 };
 
@@ -24,7 +25,7 @@ export const DRIFT_ROUTE_CONFIG: DriftRouteConfig[] = [
   {
     key: 'map-ops',
     index: true,
-    element: <LandingForm />,
+    component: LandingForm,
     nav: {
       label: 'Map Ops',
       to: '/drift',
@@ -35,7 +36,7 @@ export const DRIFT_ROUTE_CONFIG: DriftRouteConfig[] = [
   {
     key: 'ops-detail',
     path: 'aoi/:aoi_id',
-    element: <OpsDashboard />,
+    component: OpsDashboard,
     nav: {
       label: 'Ops Detail',
       to: '/drift/aoi/mumbai',
@@ -46,7 +47,7 @@ export const DRIFT_ROUTE_CONFIG: DriftRouteConfig[] = [
   {
     key: 'history',
     path: 'history',
-    element: <HistoryPage />,
+    component: HistoryPage,
     nav: {
       label: 'History',
       to: '/drift/history',
@@ -57,7 +58,7 @@ export const DRIFT_ROUTE_CONFIG: DriftRouteConfig[] = [
   {
     key: 'intel',
     path: 'dashboard',
-    element: <IntelDashboardPage />,
+    component: IntelDashboardPage,
     nav: {
       label: 'Intel',
       to: '/drift/dashboard',

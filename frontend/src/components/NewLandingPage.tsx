@@ -187,12 +187,12 @@ export const NewLandingPage: React.FC = () => {
     {
       step: '01',
       title: 'Define Your Sector',
-      desc: 'Open the DRIFT Map and click 4 points on the ocean to draw a target polygon. The system validates that no land is enclosed — if it is, you\'ll be prompted to redraw.',
+      desc: 'Open the D.R.I.F.T. Map and click 4 points on the ocean to draw a target polygon. The system validates that no land is enclosed — if it is, you\'ll be prompted to redraw.',
     },
     {
       step: '02',
       title: 'Analyze & Detect',
-      desc: 'Hit "Initialize AWS Deep Scan" and DRIFT fetches the latest Sentinel-2 satellite tile, runs AI-based sub-pixel detection, and overlays plastic density zones in real-time.',
+      desc: 'Hit "Initialize AWS Deep Scan" and D.R.I.F.T. fetches the latest Sentinel-2 satellite tile, runs AI-based sub-pixel detection, and overlays plastic density zones in real-time.',
     },
     {
       step: '03',
@@ -242,17 +242,17 @@ export const NewLandingPage: React.FC = () => {
 
         <div className="absolute inset-0 bg-gradient-to-t from-primary-navy/80 via-transparent to-transparent z-10" />
 
-        <div className="absolute top-12 left-8 md:top-16 md:left-16 z-20 pointer-events-none">
-          <h1 className="text-6xl md:text-[9rem] font-syne font-bold tracking-tight text-white leading-none drop-shadow-md">
+        <div className="absolute top-10 left-4 md:top-16 md:left-16 z-20 pointer-events-none max-w-[92vw]">
+          <h1 className="type-display-hero font-syne font-bold tracking-tight text-white leading-none drop-shadow-md">
             D.R.I.F.T.
           </h1>
-          <p className="text-sm md:text-lg font-inter tracking-[0.2em] mt-4 text-white/90 font-medium drop-shadow-sm">
+          <p className="text-[11px] sm:text-sm md:text-lg font-inter tracking-[0.12em] sm:tracking-[0.2em] mt-3 md:mt-4 text-white/90 font-medium drop-shadow-sm">
             Debris Recognition, Imaging & Forecast Trajectory
           </p>
         </div>
 
-        <div className="absolute bottom-28 left-8 md:left-16 z-20 pointer-events-none max-w-xl">
-          <p className="text-base md:text-xl font-inter font-light leading-relaxed text-white/80 drop-shadow-sm">
+        <div className="absolute bottom-24 left-4 right-4 md:left-16 md:right-auto z-20 pointer-events-none max-w-xl">
+          <p className="text-sm sm:text-base md:text-xl font-inter font-light leading-relaxed text-white/85 drop-shadow-sm">
             An AI-powered ocean surveillance platform that detects marine plastic debris from satellite imagery, forecasts its drift path, and plans optimal cleanup missions.
           </p>
         </div>
@@ -287,7 +287,7 @@ export const NewLandingPage: React.FC = () => {
                 In satellite imagery, a single pixel at 10-meter resolution covers enormous areas. Macroplastics often occupy less than 20% of a pixel, rendering them invisible to standard classification. Existing monitoring relies on ship surveys and beach cleanups — reactive approaches that miss 99% of floating debris.
               </p>
               <p>
-                DRIFT changes this paradigm. By fusing multi-spectral satellite bands with AI-driven sub-pixel analysis, we detect plastic patches from space, predict where ocean currents will carry them, and generate actionable deployment plans — all before debris reaches the coastline.
+                D.R.I.F.T. changes this paradigm. By fusing multi-spectral satellite bands with AI-driven sub-pixel analysis, we detect plastic patches from space, predict where ocean currents will carry them, and generate actionable deployment plans — all before debris reaches the coastline.
               </p>
             </div>
           </motion.div>
@@ -323,6 +323,56 @@ export const NewLandingPage: React.FC = () => {
           </motion.div>
         </section>
 
+        {/* ── FINAL CTA ── */}
+        <section className="flex flex-col justify-center items-center text-center max-w-3xl mx-auto px-4 md:px-6 mb-28 md:mb-40">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.5 }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <h2 className="type-display-lg font-syne font-medium tracking-tight mb-6">
+              Ready to scan the ocean?
+            </h2>
+            <p className="type-body-lg font-inter font-light leading-relaxed mb-10 md:mb-12 text-text-main/60">
+              Define a target sector, detect floating debris, trace its future path, and plan a Coast Guard mission — all from your browser.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center w-full sm:w-auto">
+              <motion.button
+                onClick={() => navigate('/drift')}
+                className="group relative inline-flex items-center justify-center w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 font-inter font-medium text-sm bg-accent-cyan text-primary-navy rounded-full transition-all duration-500 overflow-hidden"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="absolute inset-0 w-full h-full bg-accent-amber translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1]" />
+                <span className="relative z-10 flex items-center gap-3">
+                  Launch D.R.I.F.T. Map
+                  <motion.span className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</motion.span>
+                </span>
+              </motion.button>
+
+              <motion.button
+                onClick={() => navigate('/drift/history')}
+                className="inline-flex items-center justify-center w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 font-inter font-medium text-sm border border-white/10 text-text-main/70 rounded-full hover:border-accent-amber/40 hover:text-accent-amber transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                View Search History
+              </motion.button>
+
+              <motion.button
+                onClick={() => navigate('/drift/dashboard')}
+                className="inline-flex items-center justify-center w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 font-inter font-medium text-sm border border-accent-cyan/40 text-accent-cyan rounded-full hover:bg-accent-cyan/10 transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Open Intel Dashboard
+              </motion.button>
+            </div>
+          </motion.div>
+        </section>
+
         {/* ── SECTION 2: PLATFORM FEATURES ── */}
         <section className="max-w-5xl mx-auto px-6 mb-40">
           <motion.div
@@ -333,7 +383,7 @@ export const NewLandingPage: React.FC = () => {
           >
             <p className="text-xs font-inter uppercase tracking-[0.3em] text-accent-cyan mb-6">Core Capabilities</p>
             <h2 className="text-4xl md:text-6xl font-syne font-medium tracking-tight mb-16">
-              What DRIFT <span className="text-white/40">does.</span>
+              What D.R.I.F.T. <span className="text-white/40">does.</span>
             </h2>
           </motion.div>
 
@@ -486,56 +536,6 @@ export const NewLandingPage: React.FC = () => {
                   </ul>
                 </div>
               ))}
-            </div>
-          </motion.div>
-        </section>
-
-        {/* ── FINAL CTA ── */}
-        <section className="flex flex-col justify-center items-center text-center max-w-3xl mx-auto px-6 mb-24">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <h2 className="text-4xl md:text-6xl font-syne font-medium tracking-tight mb-6">
-              Ready to scan the ocean?
-            </h2>
-            <p className="text-lg md:text-xl font-inter font-light leading-relaxed mb-12 text-text-main/60">
-              Define a target sector, detect floating debris, trace its future path, and plan a Coast Guard mission — all from your browser.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <motion.button
-                onClick={() => navigate('/drift')}
-                className="group relative inline-flex items-center justify-center px-12 py-5 font-inter font-medium text-sm bg-accent-cyan text-primary-navy rounded-full transition-all duration-500 overflow-hidden"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="absolute inset-0 w-full h-full bg-accent-amber translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1]" />
-                <span className="relative z-10 flex items-center gap-3">
-                  Launch DRIFT Map
-                  <motion.span className="inline-block transition-transform duration-300 group-hover:translate-x-1">→</motion.span>
-                </span>
-              </motion.button>
-
-              <motion.button
-                onClick={() => navigate('/drift/history')}
-                className="inline-flex items-center justify-center px-12 py-5 font-inter font-medium text-sm border border-white/10 text-text-main/70 rounded-full hover:border-accent-amber/40 hover:text-accent-amber transition-all duration-300"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                View Search History
-              </motion.button>
-
-              <motion.button
-                onClick={() => navigate('/drift/dashboard')}
-                className="inline-flex items-center justify-center px-12 py-5 font-inter font-medium text-sm border border-accent-cyan/40 text-accent-cyan rounded-full hover:bg-accent-cyan/10 transition-all duration-300"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Open Intel Dashboard
-              </motion.button>
             </div>
           </motion.div>
         </section>
