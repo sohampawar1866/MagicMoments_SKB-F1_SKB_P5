@@ -19,15 +19,16 @@ An autonomous satellite-to-mission intelligence layer for floating marine macrop
 - ✓ FastAPI skeleton with CORS wide-open and `/api/v1` prefix — existing (`backend/main.py`)
 - ✓ Mock GeoJSON endpoints for `/detect`, `/forecast`, `/mission` — existing (`backend/services/mock_data.py`) — preserved as fallback during demo
 - ✓ MARIDA dataset staged locally — 1,381 patches across 63 Sentinel-2 scenes, 15 classes (plastic at index 1), pre-split train/val/test (`MARIDA/splits/*.txt`)
+- ✓ **REQ-ML-01** — FDI (Biermann 2020) / NDVI / PI (Themistocleous 2020) features via `backend/ml/features.py::feature_stack` (14-channel tensor). Validated in Phase 1.
+- ✓ **REQ-ML-04** (partial, dummy branch) — `run_inference(tile_path) → DetectionFeatureCollection` returns schema-valid GeoJSON on real MARIDA patches. Real pretrained weights (our_real branch) deferred to Phase 3. Validated in Phase 1.
+- ✓ **Frozen detection schema** — `backend/core/schemas.py` committed with `extra="forbid", frozen=True`. All Phase 2/3 consumers can depend on it.
 
 ### Active
 
 <!-- Current scope for this milestone. Building toward these. -->
 
-- [ ] **REQ-ML-01** — Feature engineering module: FDI (Biermann 2020), NDVI, PI (Themistocleous 2020) computable from 11 Sentinel-2 bands with a single reusable function (`backend/ml/features.py`)
 - [ ] **REQ-ML-02** — MARIDA dataset loader: reads `splits/*.txt` → 256×256 torch tensors, loads 11-band `.tif` + `_cl.tif` mask + `_conf.tif` confidence weight, normalizes reflectance
-- [ ] **REQ-ML-03** — Dual-head detection model: UNet++ (ResNet-18 encoder) with SE spectral-attention block; outputs binary plastic mask + fractional-cover regression; 14-channel input (11 bands + FDI + NDVI + PI)
-- [ ] **REQ-ML-04** — Phase 1 inference with pretrained `marccoru/marinedebrisdetector` baseline: `run_inference(tile_path) → FeatureCollection` returns valid GeoJSON per the frozen schema (`conf_raw, conf_adj, fraction_plastic, area_m2, age_days_est, class`)
+- [ ] **REQ-ML-03** — Dual-head detection model: UNet++ (ResNet-18 encoder) with SE spectral-attention block; outputs binary plastic mask + fractional-cover regression; 14-channel input (11 bands + FDI + NDVI + PI) *(model class shipped in Phase 1; SE attention + trained weights land in Phase 3)*
 - [ ] **REQ-ML-05** — Phase 3 real training on Kaggle T4/P100 (25 epochs, Dice+BCE + MSE losses, biofouling augmentation, synthetic sub-pixel mixing); achieves IoU ≥ 0.45, precision@0.7 ≥ 0.75, sub-pixel MAE ≤ 0.15 on MARIDA val
 - [ ] **REQ-ML-06** — Biofouling instrumentation: training-time NIR×[0.5,1.0] augmentation on 40% of positive samples; inference-time confidence decay `conf_adj = conf_raw · exp(-age/30)`
 - [ ] **REQ-PHYS-01** — Environment data loader: CMEMS surface currents (u/v, 1/12°, hourly) + ERA5 10 m winds (u10/v10, 0.25°, hourly) via xarray; bilinear interpolation at (lon, lat, t)
@@ -110,4 +111,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-17 after initialization*
+*Last updated: 2026-04-17 after Phase 01 completion (schema-foundation-dummy-inference)*
