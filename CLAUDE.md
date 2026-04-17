@@ -15,7 +15,7 @@ An autonomous satellite-to-mission intelligence layer for floating marine macrop
 - **Tech stack (locked per PRD §8.6):** PyTorch 2.x + segmentation_models_pytorch, Rasterio, xarray, GeoPandas, Shapely — all pip-installable. No from-scratch transformers.
 - **Python version:** 3.10 / 3.11 / 3.12 only (per `backend/README.md` — shapely/geopandas binary wheels are broken on 3.9 and 3.13+).
 - **Training compute:** Kaggle free tier (12 GPU-hours/week, P100 or T4, ~16 GB VRAM). No AWS/GCP. Training script must be a single notebook runnable on Kaggle.
-- **Pretrained weights:** Phase 1 uses `torch.hub.load("marccoru/marinedebrisdetector", "unetpp")` as-is (already validated on MARIDA) — not building from scratch.
+- **Pretrained weights:** Phase 1 uses the `dummy` branch (random/ImageNet-initialized SMP UnetPlusPlus) per research finding that `marccoru/marinedebrisdetector` weights live on private Google Drive (moved Aug 2024) and are not auto-fetchable by any public hub loader. The marccoru baseline is an optional Phase 2 bonus requiring a manual Drive download; the `our_real` (Kaggle-trained) weights hot-swap in Phase 3 via kagglehub. See `.planning/phases/01-schema-foundation-dummy-inference/01-RESEARCH.md`.
 - **No live data ingestion:** every data source (S2 tiles, CMEMS currents, ERA5 winds) pre-staged. No auth flows in the runtime pipeline.
 - **Contract freeze before Phase 1 ends:** detection GeoJSON feature schema is locked for all downstream consumers (tracker, planner, future API layer).
 - **Scope rule (PRD §12, zero-sum):** any new feature proposal must be paired with a removal. Scope creep is the single highest risk.
