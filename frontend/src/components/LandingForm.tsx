@@ -57,9 +57,24 @@ export const LandingForm: React.FC = () => {
     return [16, 185, 129, 200]; // Emerald Green
   };
 
-  const handleMapClick = useCallback((info: any) => {
+  const handleMapClick = useCallback(async (info: any) => {
     if (!info.coordinate) return;
     const [lng, lat] = info.coordinate;
+
+    try {
+      const validationRes = await axios.post('http://localhost:8000/api/v1/tracker/validate-point', {
+        coordinate: [lng, lat]
+      });
+
+      if (!validationRes.data?.is_ocean) {
+        alert('Deployment Target Error: This point is on land. Select only ocean coordinates.');
+        return;
+      }
+    } catch (err) {
+      console.error('Point validation failed', err);
+      alert('Unable to validate selected point. Please try again.');
+      return;
+    }
 
     setDrawingPoints(prev => {
       // If we already have a box, a new click resets the drawing board

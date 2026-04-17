@@ -23,6 +23,9 @@ db_lock = threading.Lock()
 class SearchBox(BaseModel):
     coordinates: list # list of [lon, lat] pairs
 
+class PointCheck(BaseModel):
+    coordinate: list # [lon, lat]
+
 # Initialize DB if it doesn't exist
 if not os.path.exists(DB_FILE):
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -164,6 +167,18 @@ async def add_search(box: SearchBox):
     save_history(history)
     
     return record
+
+@router.post("/validate-point")
+async def validate_point(payload: PointCheck):
+    if not payload.coordinate or len(payload.coordinate) != 2:
+        raise HTTPException(status_code=400, detail="Coordinate must be [lon, lat].")
+
+    lon, lat = payload.coordinate
+    is_ocean = not globe.is_land(lat, lon)
+    return {
+        "is_ocean": is_ocean,
+        "message": "Ocean point" if is_ocean else "Land point"
+    }
 
 @router.get("/search")
 async def get_searches():
