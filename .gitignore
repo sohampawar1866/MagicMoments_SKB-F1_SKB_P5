@@ -1,0 +1,28 @@
+# Environment
+venv/
+env/
+.venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pye
+*.pyd
+*.zip
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Project Data / Over-sized files
+data/
+*.geojson
+*.shp
+*.gpkg
