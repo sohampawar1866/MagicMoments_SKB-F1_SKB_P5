@@ -26,7 +26,8 @@ from backend.core.schemas import (
     DetectionFeatureCollection,
     DetectionProperties,
 )
-from backend.ml.features import feature_stack
+from backend.ml.features import feature_stack, compute_fdi, compute_ndvi
+from backend.ml.spectral import gate_polygon_arrays
 from backend.ml.weights import load_weights
 
 
@@ -118,6 +119,10 @@ def _polygonize(
     min_area_m2: float,
     transform: rasterio.Affine,
     src_crs: str,
+    fdi_arr: np.ndarray | None = None,
+    ndvi_arr: np.ndarray | None = None,
+    spectral_gate: bool = True,
+    rejected_counter: list[int] | None = None,
 ) -> list[DetectionFeature]:
     """Threshold + shapes + buffer(0) + area filter. Reprojects vertices to WGS84.
 
@@ -146,6 +151,23 @@ def _polygonize(
         area_m2 = poly.area  # already in UTM meters (S2 tiles are UTM)
         if area_m2 < min_area_m2:
             continue
+
+        if spectral_gate and fdi_arr is not None and ndvi_arr is not None:
+            try:
+                from rasterio.features import geometry_mask
+                pmask = ~geometry_mask(
+                    [poly.__geo_interface__],
+                    out_shape=fdi_arr.shape,
+                    transform=transform,
+                    invert=False,
+                )
+                gate_pass, _stats = gate_polygon_arrays(fdi_arr, ndvi_arr, pmask)
+                if not gate_pass:
+                    if rejected_counter is not None:
+                        rejected_counter[0] += 1
+                    continue
+            except Exception:
+                pass
 
         # Reproject exterior ring UTM -> WGS84
         xs, ys = zip(*list(poly.exterior.coords))
@@ -200,6 +222,9 @@ def run_inference(tile_path: Path, cfg: Settings) -> DetectionFeatureCollection:
         patch=cfg.ml.patch_size,
         stride=cfg.ml.stride,
     )
+    fdi_arr = compute_fdi(bands_hwc)
+    ndvi_arr = compute_ndvi(bands_hwc)
+    rejected = [0]
     features = _polygonize(
         prob,
         frac,
@@ -207,5 +232,15 @@ def run_inference(tile_path: Path, cfg: Settings) -> DetectionFeatureCollection:
         min_area_m2=cfg.ml.min_area_m2,
         transform=transform,
         src_crs=crs,
+        fdi_arr=fdi_arr,
+        ndvi_arr=ndvi_arr,
+        spectral_gate=getattr(cfg.ml, "spectral_gate", True),
+        rejected_counter=rejected,
     )
+    if rejected[0]:
+        import logging
+        logging.getLogger(__name__).info(
+            "spectral_gate: rejected %d polygons (FDI<%.4f or NDVI>%.2f)",
+            rejected[0], 0.005, 0.20,
+        )
     return DetectionFeatureCollection(type="FeatureCollection", features=features)
