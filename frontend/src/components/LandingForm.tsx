@@ -5,7 +5,7 @@ import DeckGL from '@deck.gl/react';
 import { LineLayer, PathLayer, PolygonLayer, ScatterplotLayer, GeoJsonLayer } from '@deck.gl/layers';
 import * as turf from '@turf/turf';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import axios from 'axios';
+import api, { apiErrorMessage } from '../lib/api';
 
 const INITIAL_VIEW_STATE = {
   longitude: 80.0,
@@ -40,15 +40,12 @@ export const LandingForm: React.FC = () => {
   const [hoverInfo, setHoverInfo] = useState<{ lng: number, lat: number, x: number, y: number } | null>(null);
 
   React.useEffect(() => {
-    // Fetch global history from the backend
-    axios.get('http://localhost:8000/api/v1/tracker/search').then(res => {
-      setSearchHistory(res.data);
-    }).catch(console.error);
-
-    // Fetch dynamic coastline
-    axios.get('http://localhost:8000/api/v1/tracker/coastline').then(res => {
-      setCoastalGeoJson(res.data);
-    }).catch(console.error);
+    api.trackerSearch().then(setSearchHistory).catch(err => {
+      console.error('tracker/search:', apiErrorMessage(err));
+    });
+    api.trackerCoastline().then(setCoastalGeoJson).catch(err => {
+      console.error('tracker/coastline:', apiErrorMessage(err));
+    });
   }, []);
 
   const getDensityColor = (density: number): [number, number, number, number] => {
@@ -174,38 +171,35 @@ export const LandingForm: React.FC = () => {
   ].filter(Boolean);
 
   const handleSubmit = async () => {
-    if (currentSelection) {
-      try {
-        await axios.post('http://localhost:8000/api/v1/tracker/search', {
-          coordinates: drawingPoints
-        });
+    if (!currentSelection) return;
+    try {
+      await api.trackerSubmit(drawingPoints as Array<[number, number]>);
 
-        // Fetch globally updated search history instead of local hack
-        const histRes = await axios.get('http://localhost:8000/api/v1/tracker/search');
-        setSearchHistory(histRes.data);
+      // Refresh history + coastline so the new sector + coastal intensity
+      // appear before we hand off to the ops dashboard.
+      const [hist, coast] = await Promise.all([
+        api.trackerSearch(),
+        api.trackerCoastline(),
+      ]);
+      setSearchHistory(hist);
+      setCoastalGeoJson(coast);
 
-        // Let's reload coastline intensity to respond instantly to the backend update
-        const coastRes = await axios.get('http://localhost:8000/api/v1/tracker/coastline');
-        setCoastalGeoJson(coastRes.data);
+      const center = turf.centerOfMass(currentSelection).geometry.coordinates;
+      const customAoiId = `custom_${center[0].toFixed(4)}_${center[1].toFixed(4)}`;
 
-        const center = turf.centerOfMass(currentSelection).geometry.coordinates;
-        const customAoiId = `custom_${center[0].toFixed(4)}_${center[1].toFixed(4)}`;
+      setDrawingPoints([]);
+      setCurrentSelection(null);
 
-        // Reset local selection drawing state so we can see the popups
-        setDrawingPoints([]);
-        setCurrentSelection(null);
-        // We comment out navigate so the user hits the UX they asked for ("on spot popup")
-        // navigate(`/drift/aoi/${customAoiId}`);
-      } catch (err: any) {
-        console.error(err);
-        if (err.response && err.response.data && err.response.data.detail) {
-          alert(err.response.data.detail);
-        } else {
-          alert("Error deploying sector. Please try an oceanic location.");
-        }
-        setDrawingPoints([]);
-        setCurrentSelection(null);
-      }
+      // Route into the Ops Dashboard for the sector we just deployed.
+      navigate(`/drift/aoi/${customAoiId}`);
+    } catch (err) {
+      const msg = apiErrorMessage(err);
+      console.error('tracker submit:', msg);
+      alert(msg.includes('ocean') || msg.includes('land')
+        ? msg
+        : `Error deploying sector: ${msg}`);
+      setDrawingPoints([]);
+      setCurrentSelection(null);
     }
   };
 
@@ -241,7 +235,7 @@ export const LandingForm: React.FC = () => {
           </button>
 
           <button
-            onClick={() => window.location.href = '/drift/history'}
+            onClick={() => navigate('/drift/history')}
             style={{ marginTop: '15px', width: '100%', background: '#2a2f38', border: '1px solid #475569', color: '#cbd5e1', padding: '10px', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.3s ease', fontWeight: 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
             onMouseOver={(e) => e.currentTarget.style.background = '#38404d'}
             onMouseOut={(e) => e.currentTarget.style.background = '#2a2f38'}
@@ -270,7 +264,7 @@ export const LandingForm: React.FC = () => {
       <div style={{ position: 'relative', flexGrow: 1, height: '100%' }}>
         <DeckGL
           initialViewState={viewState}
-          onViewStateChange={({ viewState }) => setViewState(viewState)}
+          onViewStateChange={({ viewState }) => setViewState(viewState as typeof INITIAL_VIEW_STATE)}
           controller={true}
           layers={layers}
           onClick={handleMapClick}
