@@ -36,9 +36,13 @@ MARIDA/
 # catch any in-repo checkpoints if someone accidentally copies one in.
 *.pth
 *.ckpt
-backend/ml/checkpoints/*.pth
-backend/ml/checkpoints/*.ckpt
+
+# ML checkpoints (user-supplied, gitignored per D-02 + INFRA-05)
 backend/ml/checkpoints/*.pt
+backend/ml/checkpoints/*.pth
+backend/ml/checkpoints/*.pkl
+backend/ml/checkpoints/*.ckpt
+!backend/ml/checkpoints/.gitkeep
 data/env/*.nc
 
 # Phase metrics (generated at runtime)
