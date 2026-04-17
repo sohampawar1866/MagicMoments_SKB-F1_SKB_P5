@@ -115,12 +115,6 @@ export const LandingForm: React.FC = () => {
       const processingSquare = buildSentinelPatchSquare(lng, lat, SENTINEL2_PATCH_SIZE_METERS);
       setCurrentSelection(turf.polygon([[...previewSquare, previewSquare[0]]]));
       setProcessingSelection(turf.polygon([[...processingSquare, processingSquare[0]]]));
-      setViewState(prev => ({
-        ...prev,
-        longitude: lng,
-        latitude: lat,
-        zoom: Math.max(prev.zoom, 13.5)
-      }));
       return nextPoints;
     });
   }, []);
