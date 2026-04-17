@@ -105,8 +105,8 @@ export const OpsDashboard: React.FC = () => {
     detectionData && new GeoJsonLayer({
       id: 'ai-detections',
       data: detectionData,
-      getFillColor: [255, 23, 68, 180], // Red polygons
-      getLineColor: [255, 23, 68, 255],
+      getFillColor: [245, 158, 11, 180], // Gold/Amber polygons
+      getLineColor: [245, 158, 11, 255],
       stroked: true,
       filled: true,
       lineWidthMinPixels: 2,
@@ -117,8 +117,8 @@ export const OpsDashboard: React.FC = () => {
     forecastData && new GeoJsonLayer({
       id: 'drift-forecast',
       data: forecastData,
-      getFillColor: [0, 229, 255, 100], // Cyan ghost polygons
-      getLineColor: [0, 229, 255, 255],
+      getFillColor: [16, 185, 129, 100], // Emerald Green ghost polygons
+      getLineColor: [16, 185, 129, 255],
       stroked: true,
       filled: true,
       lineWidthMinPixels: 2,
@@ -128,28 +128,28 @@ export const OpsDashboard: React.FC = () => {
   ].filter(Boolean);
 
   return (
-    <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem', minHeight: '100vh', background: '#0a0a0a', color: '#fff' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #333', paddingBottom: '1rem' }}>
-        <h2 style={{ margin: 0, color: '#00e5ff' }}><Activity size={24} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> OPERATIONS: {aoi_id}</h2>
+    <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem', minHeight: '100vh', background: '#1e2229', color: '#e2e8f0', fontFamily: 'Inter, sans-serif' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #38404d', paddingBottom: '1rem' }}>
+        <h2 style={{ margin: 0, color: '#e2e8f0' }}><Activity size={24} style={{ marginRight: '8px', verticalAlign: 'middle', color: '#f59e0b' }} /> OPERATIONS: {aoi_id}</h2>
         
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button 
             onClick={handleExportMission}
             disabled={generatingMission || !detectionData}
-            style={{ padding: '0.6rem 1.5rem', background: '#ff1744', color: 'white', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
+            style={{ padding: '0.6rem 1.5rem', background: '#f59e0b', color: '#1e2229', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
             <CheckCircle size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
             {generatingMission ? 'GENERATING...' : 'EXPORT GPX MISSION'}
           </button>
           
-          <button onClick={() => navigate('/drift')} style={{ padding: '0.6rem 1.5rem', background: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+          <button onClick={() => navigate('/drift')} style={{ padding: '0.6rem 1.5rem', background: '#272c35', color: '#cbd5e1', border: '1px solid #475569', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
             ABORT & RETURN
           </button>
         </div>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
-        <div style={{ background: '#111', borderRadius: '8px', border: '1px solid #333', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ position: 'relative', flexGrow: 1, minHeight: '600px', backgroundColor: '#000', borderRadius: '8px 8px 0 0', overflow: 'hidden' }}>
+        <div style={{ background: '#272c35', borderRadius: '8px', border: '1px solid #38404d', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
+          <div style={{ position: 'relative', flexGrow: 1, minHeight: '600px', backgroundColor: '#1e2229', borderRadius: '8px 8px 0 0', overflow: 'hidden' }}>
             <DeckGL
               initialViewState={viewState}
               onViewStateChange={({viewState}) => setViewState(viewState)}
@@ -161,56 +161,56 @@ export const OpsDashboard: React.FC = () => {
             </DeckGL>
           </div>
           
-          <div style={{ padding: '1.5rem', display: 'flex', gap: '2rem', alignItems: 'center', background: '#1a1a1a', borderRadius: '0 0 8px 8px', borderTop: '1px solid #333' }}>
+          <div style={{ padding: '1.5rem', display: 'flex', gap: '2rem', alignItems: 'center', background: '#2a2f38', borderRadius: '0 0 8px 8px', borderTop: '1px solid #38404d' }}>
             <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <label style={{ color: '#aaa', fontWeight: 'bold' }}>T+ FORECAST (HOURS): <span style={{ color: '#00e5ff' }}>{timeSlider}h</span></label>
-              <input type="range" min="0" max="72" step="24" value={timeSlider} onChange={e => setTimeSlider(Number(e.target.value))} style={{ flexGrow: 1, accentColor: '#00e5ff' }} />
+              <label style={{ color: '#cbd5e1', fontWeight: 'bold' }}>T+ FORECAST (HOURS): <span style={{ color: '#10b981' }}>{timeSlider}h</span></label>
+              <input type="range" min="0" max="72" step="24" value={timeSlider} onChange={e => setTimeSlider(Number(e.target.value))} style={{ flexGrow: 1, accentColor: '#10b981' }} />
             </div>
-            <button disabled={loading} onClick={fetchForecast} style={{ padding: '0.75rem 2rem', background: '#00e5ff', color: '#000', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+            <button disabled={loading} onClick={fetchForecast} style={{ padding: '0.75rem 2rem', background: '#10b981', color: '#1e2229', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)' }}>
               CALCULATE DRIFT PHYSICS
             </button>
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div style={{ background: '#111', borderRadius: '8px', padding: '1.5rem', border: '1px solid #333' }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: '#aaa' }}>RADAR LOGS</h3>
+          <div style={{ background: '#272c35', borderRadius: '8px', padding: '1.5rem', border: '1px solid #38404d', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: '#e2e8f0', fontWeight: 'bold' }}>RADAR LOGS</h3>
             
-            <div style={{ padding: '1rem', background: 'rgba(255, 23, 68, 0.1)', borderLeft: '3px solid #ff1744', marginBottom: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#ff1744' }}>Current Intel</h4>
-              {loading ? <p style={{ margin: 0, color: '#aaa' }}>Scanning...</p> : (
-                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#fff' }}>
+            <div style={{ padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', borderLeft: '3px solid #f59e0b', marginBottom: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#f59e0b' }}>Current Intel</h4>
+              {loading ? <p style={{ margin: 0, color: '#94a3b8' }}>Scanning...</p> : (
+                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#cbd5e1' }}>
                   {detectionData ? `Detected ${detectionData.features?.length || 0} anomaly clusters.` : 'No baseline data.'}
                 </div>
               )}
             </div>
 
-            <div style={{ padding: '1rem', background: 'rgba(0, 229, 255, 0.1)', borderLeft: '3px solid #00e5ff' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#00e5ff' }}>Simulation Output</h4>
-              {loading ? <p style={{ margin: 0, color: '#aaa' }}>Processing vectors...</p> : (
-                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#fff' }}>
+            <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderLeft: '3px solid #10b981' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: '#10b981' }}>Simulation Output</h4>
+              {loading ? <p style={{ margin: 0, color: '#94a3b8' }}>Processing vectors...</p> : (
+                <div style={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#cbd5e1' }}>
                   {forecastData ? `Generated ${forecastData.features?.length || 0} future drift paths.` : 'No active simulation.'}
                 </div>
               )}
             </div>
           </div>
 
-          <div style={{ background: '#111', borderRadius: '8px', padding: '1.5rem', border: '1px solid #333', flexGrow: 1 }}>
-            <h3 style={{ margin: '0 0 1.5rem 0', color: '#aaa' }}><BarChart2 size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> PLASTIC DEGRADATION MODEL</h3>
+          <div style={{ background: '#272c35', borderRadius: '8px', padding: '1.5rem', border: '1px solid #38404d', flexGrow: 1, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin: '0 0 1.5rem 0', color: '#e2e8f0', fontWeight: 'bold' }}><BarChart2 size={18} style={{ marginRight: '8px', verticalAlign: 'middle', color: '#10b981' }} /> PLASTIC DEGRADATION MODEL</h3>
             {metricsData && metricsData.biofouling_chart_data && metricsData.biofouling_chart_data.length > 0 ? (
               <div style={{ height: '250px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={metricsData.biofouling_chart_data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                    <XAxis dataKey="age_days" stroke="#aaa" />
-                    <YAxis stroke="#aaa" />
-                    <Tooltip contentStyle={{ backgroundColor: '#222', border: '1px solid #00e5ff' }} />
-                    <Line type="monotone" dataKey="simulated_confidence" stroke="#00e5ff" strokeWidth={3} dot={{ fill: '#00e5ff' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#38404d" />
+                    <XAxis dataKey="age_days" stroke="#94a3b8" />
+                    <YAxis stroke="#94a3b8" />
+                    <Tooltip contentStyle={{ backgroundColor: '#272c35', border: '1px solid #f59e0b', color: '#e2e8f0' }} />
+                    <Line type="monotone" dataKey="simulated_confidence" stroke="#10b981" strokeWidth={3} dot={{ fill: '#10b981' }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             ) : (
-              <p style={{ color: '#666', textAlign: 'center', marginTop: '2rem' }}>No atmospheric degradation metrics logged.</p>
+              <p style={{ color: '#94a3b8', textAlign: 'center', marginTop: '2rem' }}>No atmospheric degradation metrics logged.</p>
             )}
           </div>
         </div>

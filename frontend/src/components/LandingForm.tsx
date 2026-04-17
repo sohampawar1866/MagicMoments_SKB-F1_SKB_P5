@@ -52,9 +52,9 @@ export const LandingForm: React.FC = () => {
   }, []);
 
   const getDensityColor = (density: number): [number, number, number, number] => {
-    if (density > 0.7) return [255, 23, 68, 200]; // Neon Pink/Red
-    if (density > 0.4) return [255, 234, 0, 200]; // Neon Yellow
-    return [0, 230, 118, 200]; // Neon Green
+    if (density > 0.7) return [245, 158, 11, 200]; // Gold/Amber
+    if (density > 0.4) return [250, 204, 21, 200]; // Yellow gold
+    return [16, 185, 129, 200]; // Emerald Green
   };
 
   const handleMapClick = useCallback((info: any) => {
@@ -92,7 +92,7 @@ export const LandingForm: React.FC = () => {
       filled: false,
       getLineColor: (f: any) => {
         const i = f.properties.intensity || 0;
-        return i > 0.05 ? [255, Math.max(0, 200 - i * 400), 0, 255] : [0, 255, 100, 255];
+        return i > 0.05 ? [245, 158, 11, 255] : [16, 185, 129, 255];
       },
       getLineWidth: (f: any) => Math.max(50, f.properties.intensity * 400),
       lineWidthMinPixels: 3,
@@ -116,7 +116,7 @@ export const LandingForm: React.FC = () => {
       id: 'impact-zones',
       data: activeHistory,
       getPosition: (d: any) => d.driftVector,
-      getFillColor: [255, 10, 10, 255],
+      getFillColor: [245, 158, 11, 255],
       getRadius: 6000, // 6 km radius hit marker
       radiusMinPixels: 4,
       pickable: true
@@ -148,7 +148,7 @@ export const LandingForm: React.FC = () => {
       id: 'drawing-border',
       data: drawingPoints.length > 0 ? [{ path: currentSelection ? [...drawingPoints, drawingPoints[0]] : drawingPoints }] : [],
       getPath: (d: any) => d.path,
-      getColor: [0, 229, 255, 255],
+      getColor: [16, 185, 129, 255],
       getWidth: 150,
       widthMinPixels: 2
     }),
@@ -158,7 +158,7 @@ export const LandingForm: React.FC = () => {
       id: 'drawing-nodes',
       data: drawingPoints.map(p => ({ position: p })),
       getPosition: (d: any) => d.position,
-      getFillColor: [0, 229, 255, 255],
+      getFillColor: [16, 185, 129, 255],
       getRadius: 300,
       radiusMinPixels: 5
     }),
@@ -168,7 +168,7 @@ export const LandingForm: React.FC = () => {
       id: 'drawing-fill',
       data: [{ contour: [...drawingPoints, drawingPoints[0]] }],
       getPolygon: (d: any) => d.contour,
-      getFillColor: [0, 229, 255, 50],
+      getFillColor: [16, 185, 129, 50],
       filled: true
     })
   ].filter(Boolean);
@@ -210,117 +210,130 @@ export const LandingForm: React.FC = () => {
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh', backgroundColor: '#0a0a0a' }}>
-      <DeckGL
-        initialViewState={viewState}
-        onViewStateChange={({ viewState }) => setViewState(viewState)}
-        controller={true}
-        layers={layers}
-        onClick={handleMapClick}
-        onHover={(info) => {
-          if (info.coordinate) {
-            setHoverInfo({ lng: info.coordinate[0], lat: info.coordinate[1], x: info.x, y: info.y });
-          } else {
-            setHoverInfo(null);
-          }
-        }}
-        getTooltip={({ object }) => {
-          if (!object) return null;
-          if (object.properties?.name) return object.properties.name;
-          if (!object.density) return null;
-          const risk = object.density > 0.7 ? "CRITICAL" : (object.density > 0.4 ? "ELEVATED" : "LOW");
-          const color = risk === "CRITICAL" ? "#ff1744" : risk === "ELEVATED" ? "#ffea00" : "#00e5ff";
-          return {
-            html: `
-              <div style="font-family: monospace; font-size: 13px;">
-                <h4 style="margin: 0 0 5px 0; color: #00e5ff; border-bottom: 1px solid #333; padding-bottom: 5px;">SECTOR: ${object.id}</h4>
-                <div style="margin-bottom: 3px;"><strong>Risk Level:</strong> <span style="color: ${color}; font-weight: bold;">${risk}</span></div>
-                <div style="margin-bottom: 3px;"><strong>Density:</strong> ${(object.density * 100).toFixed(1)}%</div>
-                <div style="margin-bottom: 3px;"><strong>Bearing/Target:</strong> ${object.driftVector[1].toFixed(2)}&deg;N, ${object.driftVector[0].toFixed(2)}&deg;E</div>
-                <div style="color: #888; margin-top: 5px; font-size: 11px;">Deployed: ${object.date}</div>
-              </div>
-            `,
-            style: {
-              backgroundColor: 'rgba(10, 15, 25, 0.95)',
-              border: '1px solid rgba(0, 229, 255, 0.3)',
-              color: '#e0f7fa',
-              borderRadius: '6px',
-              padding: '10px',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
-              zIndex: 10000,
-              marginTop: '60px',
-              marginLeft: '15px'
-            }
-          };
-        }}
-      >
-        <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json" />
-      </DeckGL>
+    <div style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100vh', backgroundColor: '#1e2229', fontFamily: 'Inter, sans-serif' }}>
+      
+      {/* Sidebar Panel */}
+      <div style={{ width: '400px', height: '100%', backgroundColor: '#272c35', borderRight: '1px solid #38404d', display: 'flex', flexDirection: 'column', zIndex: 10, boxShadow: '2px 0 10px rgba(0,0,0,0.2)' }}>
+        
+        {/* Main Control Section */}
+        <div style={{ padding: '2rem', borderBottom: '1px solid #38404d' }}>
+          <h1 style={{ margin: '0 0 1rem 0', fontSize: '1.8rem', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '2px' }}>DRIFT_OS v2.0</h1>
 
-      {/* Floating Coordinate Tracker */}
-      {hoverInfo && (
-        <div style={{
-          position: 'absolute',
-          left: hoverInfo.x + 15,
-          top: hoverInfo.y + 15,
-          background: 'rgba(10, 15, 25, 0.9)',
-          color: '#00e5ff',
-          padding: '6px 10px',
-          borderRadius: '4px',
-          fontSize: '12px',
-          pointerEvents: 'none',
-          zIndex: 1,
-          fontFamily: 'monospace',
-          border: '1px solid rgba(0, 229, 255, 0.4)',
-          boxShadow: '0 4px 10px rgba(0,0,0,0.5)'
-        }}>
-          {hoverInfo.lat.toFixed(4)}&deg;N<br />
-          {hoverInfo.lng.toFixed(4)}&deg;E
-        </div>
-      )}
-
-      {/* Floating HUD Panel */}
-      <div style={{ position: 'absolute', top: '2rem', right: '2rem', background: 'rgba(10, 15, 25, 0.85)', backdropFilter: 'blur(10px)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(0, 229, 255, 0.3)', boxShadow: '0 8px 32px rgba(0,229,255,0.2)', width: '380px', zIndex: 1000, color: '#e0f7fa' }}>
-        <h1 style={{ margin: '0 0 1rem 0', fontSize: '1.8rem', color: '#00e5ff', textTransform: 'uppercase', letterSpacing: '2px', textShadow: '0 0 10px rgba(0,229,255,0.5)' }}>DRIFT_OS v2.0</h1>
-
-        {/* Trajectory Guide for UX */}
-        <div style={{ marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: '1.6' }}>
-          <strong style={{ color: '#00e5ff' }}>&gt; SECTOR DEPLOYMENT</strong><br />
-          Click 4 points onto the map surface to define a target trapezoid over the ocean.
-          <br /><br />
-          <strong>Points Logged:</strong> {drawingPoints.length}/4
-        </div>
-
-        {drawingPoints.length === 4 && (
-          <div style={{ padding: '1rem', background: 'rgba(0, 229, 255, 0.1)', borderLeft: '4px solid #00e5ff', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-            <span style={{ color: '#00e5ff', fontWeight: 'bold' }}>[ SECTOR LOCKED ]</span><br />
-            Coordinates captured. Ready for deployment.
+          <div style={{ marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: '1.6', color: '#94a3b8' }}>
+            <strong style={{ color: '#f59e0b' }}>&gt; SECTOR DEPLOYMENT</strong><br />
+            Click 4 points onto the map surface to define a target trapezoid over the ocean.
+            <br /><br />
+            <strong>Points Logged:</strong> <span style={{color: '#e2e8f0', fontWeight: 'bold'}}>{drawingPoints.length}/4</span>
           </div>
-        )}
 
-        <button
-          onClick={handleSubmit}
-          disabled={drawingPoints.length !== 4}
-          style={{ width: '100%', padding: '1rem', background: drawingPoints.length === 4 ? '#00e5ff' : 'rgba(255,255,255,0.1)', color: drawingPoints.length === 4 ? '#000' : '#666', border: 'none', borderRadius: '6px', cursor: drawingPoints.length === 4 ? 'pointer' : 'not-allowed', fontWeight: 'bold', fontSize: '1rem', textTransform: 'uppercase', transition: 'all 0.3s ease', boxShadow: drawingPoints.length === 4 ? '0 0 15px rgba(0,229,255,0.5)' : 'none' }}>
-          {drawingPoints.length === 4 ? 'Initialize AWS Deep Scan' : 'Awaiting 4-Point Target...'}
-        </button>
+          {drawingPoints.length === 4 && (
+            <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid #10b981', marginBottom: '1.5rem', fontSize: '0.9rem', color: '#10b981' }}>
+              <span style={{ fontWeight: 'bold' }}>[ SECTOR LOCKED ]</span><br />
+              Coordinates captured. Ready for deployment.
+            </div>
+          )}
 
-        <button
-          onClick={() => window.location.href = '/drift/history'}
-          style={{ marginTop: '15px', width: '100%', background: 'transparent', border: '1px solid #333', color: '#9ca3af', padding: '10px', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.3s ease', fontWeight: 'bold' }}>
-          ACCESS DEPLOYMENT LOGS
-        </button>
+          <button
+            onClick={handleSubmit}
+            disabled={drawingPoints.length !== 4}
+            style={{ width: '100%', padding: '1rem', background: drawingPoints.length === 4 ? '#10b981' : '#38404d', color: drawingPoints.length === 4 ? '#1e2229' : '#64748b', border: 'none', borderRadius: '6px', cursor: drawingPoints.length === 4 ? 'pointer' : 'not-allowed', fontWeight: 'bold', fontSize: '1rem', textTransform: 'uppercase', transition: 'all 0.3s ease', boxShadow: drawingPoints.length === 4 ? '0 4px 6px rgba(16, 185, 129, 0.2)' : 'none' }}>
+            {drawingPoints.length === 4 ? 'Initialize AWS Deep Scan' : 'Awaiting 4-Point Target...'}
+          </button>
+
+          <button
+            onClick={() => window.location.href = '/drift/history'}
+            style={{ marginTop: '15px', width: '100%', background: '#2a2f38', border: '1px solid #475569', color: '#cbd5e1', padding: '10px', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.3s ease', fontWeight: 'bold', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#38404d'}
+            onMouseOut={(e) => e.currentTarget.style.background = '#2a2f38'}
+          >
+            ACCESS DEPLOYMENT LOGS
+          </button>
+        </div>
+
+        {/* Threat Legend Section */}
+        <div style={{ padding: '2rem', flexGrow: 1 }}>
+          <h4 style={{ margin: '0 0 1rem 0', color: '#94a3b8', textTransform: 'uppercase', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px' }}>Threat Legend & Analytics</h4>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '0.9rem', color: '#cbd5e1' }}>
+            <div style={{ width: '16px', height: '16px', background: '#f59e0b', borderRadius: '4px', boxShadow: '0 0 5px #f59e0b' }}></div> 
+            <span>Critical Coastline Accumulation</span>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', fontSize: '0.9rem', color: '#cbd5e1' }}>
+            <div style={{ width: '20px', height: '3px', background: 'linear-gradient(90deg, #10b981, #f59e0b)' }}></div> 
+            <span>Flat Vector: Predictive Drift Path</span>
+          </div>
+        </div>
       </div>
 
-      {/* Threat Legend */}
-      <div style={{ position: 'absolute', bottom: '2rem', right: '2rem', background: 'rgba(10, 15, 25, 0.85)', border: '1px solid rgba(255,255,255,0.2)', padding: '1rem', borderRadius: '8px', zIndex: 1000, color: '#fff', fontSize: '0.85rem' }}>
-        <h4 style={{ margin: '0 0 0.5rem 0', color: '#aaa', textTransform: 'uppercase' }}>Threat Legend & Analytics</h4>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <div style={{ width: '16px', height: '16px', background: '#ff1744', borderRadius: '4px', boxShadow: '0 0 5px #ff1744' }}></div> Critical Coastline Accumulation
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <div style={{ width: '20px', height: '2px', background: 'linear-gradient(90deg, #ffea00, #ff1744)' }}></div> Flat Vector: Predictive Drift Path
-        </div>
+      {/* Map Content Section */}
+      <div style={{ position: 'relative', flexGrow: 1, height: '100%' }}>
+        <DeckGL
+          initialViewState={viewState}
+          onViewStateChange={({ viewState }) => setViewState(viewState)}
+          controller={true}
+          layers={layers}
+          onClick={handleMapClick}
+          onHover={(info) => {
+            if (info.coordinate) {
+              setHoverInfo({ lng: info.coordinate[0], lat: info.coordinate[1], x: info.x, y: info.y });
+            } else {
+              setHoverInfo(null);
+            }
+          }}
+          getTooltip={({ object }) => {
+            if (!object) return null;
+            if (object.properties?.name) return object.properties.name;
+            if (!object.density) return null;
+            const risk = object.density > 0.7 ? "CRITICAL" : (object.density > 0.4 ? "ELEVATED" : "LOW");
+            const color = risk === "CRITICAL" ? "#f59e0b" : risk === "ELEVATED" ? "#facc15" : "#10b981";
+            return {
+              html: `
+                <div style="font-family: monospace; font-size: 13px;">
+                  <h4 style="margin: 0 0 5px 0; color: #10b981; border-bottom: 1px solid #38404d; padding-bottom: 5px;">SECTOR: ${object.id}</h4>
+                  <div style="margin-bottom: 3px; color: #cbd5e1;"><strong>Risk Level:</strong> <span style="color: ${color}; font-weight: bold;">${risk}</span></div>
+                  <div style="margin-bottom: 3px; color: #cbd5e1;"><strong>Density:</strong> ${(object.density * 100).toFixed(1)}%</div>
+                  <div style="margin-bottom: 3px; color: #cbd5e1;"><strong>Bearing/Target:</strong> ${object.driftVector[1].toFixed(2)}&deg;N, ${object.driftVector[0].toFixed(2)}&deg;E</div>
+                  <div style="color: #94a3b8; margin-top: 5px; font-size: 11px;">Deployed: ${object.date}</div>
+                </div>
+              `,
+              style: {
+                backgroundColor: 'rgba(39, 44, 53, 0.95)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                color: '#e2e8f0',
+                borderRadius: '6px',
+                padding: '12px',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+                zIndex: 10000,
+                marginTop: '15px',
+                left: '15px'
+              }
+            };
+          }}
+        >
+          <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json" />
+        </DeckGL>
+
+        {hoverInfo && (
+          <div style={{
+            position: 'absolute',
+            left: hoverInfo.x + 15,
+            top: hoverInfo.y + 15,
+            background: 'rgba(39, 44, 53, 0.9)',
+            color: '#10b981',
+            padding: '6px 10px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            pointerEvents: 'none',
+            zIndex: 1,
+            fontFamily: 'monospace',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.5)'
+          }}>
+            {hoverInfo.lat.toFixed(4)}&deg;N<br />
+            {hoverInfo.lng.toFixed(4)}&deg;E
+          </div>
+        )}
       </div>
     </div>
   );

@@ -145,19 +145,19 @@ export const NewLandingPage: React.FC = () => {
   }, [imagesLoaded, images]);
 
   return (
-    <div className="bg-primary-navy min-h-screen text-text-main overflow-x-hidden selection:bg-accent-cyan selection:text-white">
+    <div className="bg-primary-navy min-h-screen text-text-main overflow-x-hidden selection:bg-accent-cyan selection:text-primary-navy">
         
       {!imagesLoaded && (
           <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-primary-navy">
               <span className="text-3xl font-syne font-light mb-4 text-text-main/50">Loading Experience</span>
-              <div className="w-64 h-1 bg-black/10 rounded-full overflow-hidden">
+              <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden">
                   <div className="h-full bg-accent-cyan transition-all duration-300" style={{ width: `${loadingProgress}%` }} />
               </div>
           </div>
       )}
 
       {/* 1. HERO SECTION: IMAGE SEQUENCE PINNED */}
-      <div ref={sequenceRef} className="relative w-full h-screen overflow-hidden bg-white">
+      <div ref={sequenceRef} className="relative w-full h-screen overflow-hidden bg-primary-navy">
         
         {/* Canvas for precise frame rendering */}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" />
@@ -184,7 +184,7 @@ export const NewLandingPage: React.FC = () => {
       </div>
 
       {/* 2. CONTENT SECTIONS (SCROLLTELLING) - Elegant & Minimal */}
-      <main ref={contentRef} className="relative z-20 flex flex-col items-center bg-primary-navy text-text-main pt-32 pb-48 rounded-t-[3rem] -mt-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.05)] border-t border-black/5">
+      <main ref={contentRef} className="relative z-20 flex flex-col items-center bg-primary-navy text-text-main pt-32 pb-48 rounded-t-[3rem] -mt-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.3)] border-t border-white/5">
           
           {/* SECTION 1: Sub-Pixel Blindness */}
           <section className="min-h-[70vh] flex flex-col justify-center max-w-5xl mx-auto px-6 mb-32">
@@ -195,9 +195,9 @@ export const NewLandingPage: React.FC = () => {
                   transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }} // smooth apple-like ease
               >
                 <h2 className="text-5xl md:text-7xl font-syne font-normal tracking-tight mb-10 text-text-main">
-                    Beyond human <span className="text-accent-cyan italic">vision.</span>
+                    Beyond human <span className="text-accent-amber italic">vision.</span>
                 </h2>
-                <div className="grid md:grid-cols-2 gap-16 text-lg md:text-2xl font-inter font-light leading-relaxed text-text-main/80">
+                <div className="grid md:grid-cols-2 gap-16 text-lg md:text-2xl font-inter font-light leading-relaxed text-text-main/70">
                     <p>
                         In satellite imagery, a single pixel covers tremendous real estate. Often, macroplastics cover less than 20% of a pixel, rendering them virtually invisible to standard thresholding.
                     </p>
@@ -209,7 +209,7 @@ export const NewLandingPage: React.FC = () => {
 
               {/* Decorative Soft Line */}
               <motion.div 
-                  className="w-full h-[1px] bg-black/10 mt-32 origin-left"
+                  className="w-full h-[1px] bg-white/10 mt-32 origin-left"
                   initial={{ scaleX: 0 }}
                   whileInView={{ scaleX: 1 }}
                   viewport={{ once: true }}
@@ -228,12 +228,12 @@ export const NewLandingPage: React.FC = () => {
                   >
                         <h2 className="text-4xl md:text-5xl font-syne font-medium tracking-tight mb-8">
                             Intelligent <br/>
-                            <span className="text-black/40">Architecture.</span>
+                            <span className="text-white/40">Architecture.</span>
                         </h2>
-                        <p className="text-lg font-inter font-light leading-relaxed mb-10 text-text-main/80">
+                        <p className="text-lg font-inter font-light leading-relaxed mb-10 text-text-main/70">
                             Utilizing a sophisticated dual-pathway approach. Advanced Convolutional Neural Networks (CNNs) coupled with Vision Transformers extract spatial hierarchies and spectral sequences simultaneously.
                         </p>
-                        <ul className="space-y-6 font-inter text-base font-normal text-text-main/70">
+                        <ul className="space-y-6 font-inter text-base font-normal text-text-main/60">
                             <li className="flex items-center gap-4">
                                 <div className="w-8 h-[1px] bg-accent-cyan" /> Multi-spectral Analysis
                             </li>
@@ -248,7 +248,7 @@ export const NewLandingPage: React.FC = () => {
                   
                   {/* Clean elegant graphic instead of sci-fi panel */}
                   <motion.div 
-                      className="relative h-[600px] bg-stone rounded-3xl overflow-hidden shadow-xl shadow-black/5 flex flex-col justify-end p-8 border border-black/5"
+                      className="relative h-[600px] bg-stone rounded-3xl overflow-hidden shadow-xl shadow-black/20 flex flex-col justify-end p-8 border border-white/5"
                       initial={{ opacity: 0, scale: 0.98, y: 20 }}
                       whileInView={{ opacity: 1, scale: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.3 }}
@@ -262,16 +262,16 @@ export const NewLandingPage: React.FC = () => {
                             />
                         </div>
                         
-                        <div className="z-10 bg-white/80 backdrop-blur-xl p-6 rounded-2xl border border-white/50 shadow-sm w-full">
+                        <div className="z-10 bg-white/5 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-sm w-full">
                             <div className="flex justify-between items-center mb-4">
                                 <span className="font-inter text-xs tracking-widest text-text-main/50 uppercase">Analysis Stream</span>
-                                <span className="w-2 h-2 rounded-full bg-accent-cyan animate-pulse" />
+                                <span className="w-2 h-2 rounded-full bg-accent-amber animate-pulse" />
                             </div>
                             <div className="flex gap-2">
                                 {[1, 2, 3, 4, 5].map((i) => (
                                     <motion.div 
                                         key={i}
-                                        className="h-1 bg-black/10 flex-1 rounded-full overflow-hidden"
+                                        className="h-1 bg-white/10 flex-1 rounded-full overflow-hidden"
                                     >
                                         <motion.div 
                                             className="h-full bg-accent-cyan"
@@ -306,11 +306,11 @@ export const NewLandingPage: React.FC = () => {
                   {/* CTA BUTTON - Elegant Minimal */}
                   <motion.button 
                       onClick={() => navigate('/drift')}
-                      className="group relative inline-flex items-center justify-center px-12 py-5 font-inter font-medium text-sm bg-text-main text-white rounded-full transition-all duration-500 overflow-hidden"
+                      className="group relative inline-flex items-center justify-center px-12 py-5 font-inter font-medium text-sm bg-accent-cyan text-primary-navy rounded-full transition-all duration-500 overflow-hidden"
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                   >
-                      <div className="absolute inset-0 w-full h-full bg-accent-cyan translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1]" />
+                      <div className="absolute inset-0 w-full h-full bg-accent-amber translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.16,1,0.3,1]" />
                       <span className="relative z-10 flex items-center gap-3">
                           Launch Environment
                           <motion.span 
