@@ -10,6 +10,7 @@ fiona<1.10
 xarray==2024.2.0
 netcdf4==1.6.5
 numpy==1.26.4
+pandas>=2.2,<3.0
 pyproj==3.6.1
 scikit-learn==1.4.1.post1
 scikit-image==0.22.0

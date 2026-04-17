@@ -244,6 +244,18 @@ async def get_searches():
     return get_history()
 
 
+@router.delete("/search")
+async def clear_searches():
+    history = get_history()
+    cleared = len(history)
+    save_history([])
+    return {
+        "status": "ok",
+        "cleared": cleared,
+        "remaining": 0,
+    }
+
+
 @router.post("/revisit/{record_id}")
 async def reactivate_search(record_id: str):
     history = get_history()
