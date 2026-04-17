@@ -49,7 +49,7 @@ Core scaffolding that every downstream module consumes. Cannot be deferred.
 ### End-to-End (E2E)
 
 - [ ] **E2E-01**: `backend/e2e_test.py` — full chain on one MARIDA val patch → `run_inference` → `forecast_drift` (with synthetic or real env slice) → `plan_mission`. Asserts schema validation passes at every boundary; total wall-clock < 15 s on CPU laptop.
-- [ ] **E2E-02**: Pre-baked 4-AOI fallback JSONs at `data/prebaked/{aoi}_{stage}.json` computed at H+28. Dashboard / demo can load these directly if live inference fails mid-pitch. Fallback parity test: live output hash === pre-baked hash on the 4 demo tiles.
+- [x] **E2E-02**: Pre-baked 4-AOI fallback JSONs at `data/prebaked/{aoi}_{stage}.json` computed at H+28. Dashboard / demo can load these directly if live inference fails mid-pitch. Fallback parity test: live output hash === pre-baked hash on the 4 demo tiles.
 
 ## v2 Requirements
 
@@ -124,7 +124,7 @@ Confirmed during roadmap creation 2026-04-17. All 25 v1 requirements map to exac
 | MISSION-02 | Phase 2 | Pending |
 | MISSION-03 | Phase 3 | Pending |
 | E2E-01 | Phase 3 | Pending |
-| E2E-02 | Phase 3 | Pending |
+| E2E-02 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 25 total
