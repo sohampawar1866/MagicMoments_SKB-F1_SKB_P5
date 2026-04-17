@@ -268,15 +268,17 @@ def fetch_env_for_bbox(
         logger.info("env_service: cache miss %s — fetching upstream", key)
         currents = _fetch_cmems_currents(bbox, t0_iso, t1_iso, currents_p)
         chl = _fetch_cmems_chl(bbox, t0_iso, t1_iso, chl_p)
-        try:
-            era5 = _fetch_era5(bbox, t0_dt, horizon_days * 24, era5_p)
-        except Exception as e:
-            logger.warning(
-                "env_service: ERA5 fetch failed (%s) — synthesizing winds+SST. "
-                "Accept license at https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=download to enable real ERA5.",
-                e,
-            )
+        if os.environ.get("DRIFT_SKIP_ERA5", "1") == "1":
+            logger.info("env_service: DRIFT_SKIP_ERA5=1 — synthesizing winds+SST (set =0 once CDS license is accepted)")
             era5 = _synthetic_era5(bbox, t0_dt, horizon_days * 24)
+        else:
+            try:
+                era5 = _fetch_era5(bbox, t0_dt, horizon_days * 24, era5_p)
+            except Exception as e:
+                logger.warning(
+                    "env_service: ERA5 fetch failed (%s) — synthesizing winds+SST.", e,
+                )
+                era5 = _synthetic_era5(bbox, t0_dt, horizon_days * 24)
 
     winds = era5[["u10", "v10"]] if "u10" in era5 else era5
     sst = era5[["sst"]] if "sst" in era5 else era5

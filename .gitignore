@@ -98,3 +98,8 @@ backend/ml/checkpoints/*.ckpt
 
 # Generated metrics
 .planning/metrics/
+
+# playwright artifacts
+frontend/tests/_artifacts/
+frontend/tests/playwright-report/
+frontend/tests/test-results/

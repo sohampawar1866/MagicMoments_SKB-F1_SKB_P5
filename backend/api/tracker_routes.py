@@ -172,6 +172,21 @@ async def get_coastline():
     return coastline_data
 
 
+@router.get("/search")
+async def list_search():
+    """Return saved search history (frontend reads on landing + history page)."""
+    return get_history()
+
+
+@router.delete("/search")
+async def clear_search():
+    """Clear search history."""
+    h = get_history()
+    cleared = len(h)
+    save_history([])
+    return {"status": "ok", "cleared": cleared, "remaining": 0}
+
+
 @router.post("/search")
 async def add_search(box: SearchBox):
     if not box.coordinates:

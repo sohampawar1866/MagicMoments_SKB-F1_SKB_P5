@@ -47,7 +47,7 @@ function endpoint(path: string): string {
 
 const client = axios.create({
   baseURL: API_BASE_URL || undefined,
-  timeout: 20_000,
+  timeout: 90_000, // first-call bbox detection involves STAC fetch + CMEMS subset
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -232,7 +232,7 @@ export function snapForecastHours(h: number): ForecastHours {
 }
 
 export async function alerts(aoi_id: string): Promise<AlertsResponse> {
-  const res = await client.get<AlertsResponse>('/api/v1/alerts', {
+  const res = await client.get<AlertsResponse>(endpoint('/alerts'), {
     params: { aoi_id },
   });
   return res.data;

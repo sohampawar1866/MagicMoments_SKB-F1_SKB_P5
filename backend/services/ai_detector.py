@@ -287,6 +287,11 @@ def detect_macroplastic(
         msg = f"ai_detector: no tile resolved for {aoi_id}"
         if strict:
             raise RuntimeError(f"{msg}; strict mode disallows mock fallback")
+        # When the user drew a bbox, generate patches INSIDE it instead of
+        # the legacy AOI-center spread that ignores the user's drawn area.
+        if bbox_override is not None:
+            logger.info("ai_detector: no tile for %s → bbox-respecting synthetic patches", aoi_id)
+            return _synthetic_patches_in_bbox(aoi_id, bbox_override, n=5)
         logger.info("ai_detector: no tile resolved for %s → serving mock", aoi_id)
         return get_mock_detection_geojson(aoi_id)
 
