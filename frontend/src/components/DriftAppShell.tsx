@@ -8,6 +8,7 @@ export const DriftAppShell: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 900);
   const navContainerRef = useRef<HTMLDivElement>(null);
 
@@ -17,6 +18,9 @@ export const DriftAppShell: React.FC = () => {
       setIsMobile(mobile);
       if (!mobile) {
         setOpen(false);
+      }
+      if (mobile) {
+        setDesktopExpanded(false);
       }
     };
     window.addEventListener('resize', onResize);
@@ -38,6 +42,16 @@ export const DriftAppShell: React.FC = () => {
     { label: 'History', to: '/drift/history', icon: History, activePrefixes: ['/drift/history'] },
     { label: 'Intel', to: '/drift/dashboard', icon: Gauge, activePrefixes: ['/drift/dashboard'] },
   ];
+
+  const expanded = isMobile ? open : desktopExpanded;
+  const labelStyle: React.CSSProperties = {
+    opacity: expanded ? 1 : 0,
+    maxWidth: expanded ? 120 : 0,
+    transform: expanded ? 'translateX(0)' : 'translateX(-6px)',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    transition: 'opacity 0.25s ease, max-width 0.36s cubic-bezier(0.16, 1, 0.3, 1), transform 0.36s cubic-bezier(0.16, 1, 0.3, 1)'
+  };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%', position: 'relative', backgroundColor: 'var(--color-background)' }}>
@@ -80,8 +94,14 @@ export const DriftAppShell: React.FC = () => {
       )}
 
       <aside
+        onMouseEnter={() => {
+          if (!isMobile) setDesktopExpanded(true);
+        }}
+        onMouseLeave={() => {
+          if (!isMobile) setDesktopExpanded(false);
+        }}
         style={{
-          width: isMobile ? 240 : open ? 220 : 72,
+          width: isMobile ? 240 : expanded ? 220 : 72,
           transition: isMobile ? 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)' : 'width 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
           background: 'var(--color-surface-container-lowest)',
           padding: '16px 10px 18px',
@@ -94,11 +114,14 @@ export const DriftAppShell: React.FC = () => {
           zIndex: 100,
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: isMobile ? '10px 0 30px rgba(0,0,0,0.5)' : 'none'
+          boxShadow: isMobile ? '10px 0 30px rgba(0,0,0,0.5)' : 'none',
+          willChange: isMobile ? 'transform' : 'width'
         }}
       >
         <button
-          onClick={() => setOpen((prev) => !prev)}
+          onClick={() => {
+            if (isMobile) setOpen((prev) => !prev);
+          }}
           style={{
             width: '100%',
             height: 42,
@@ -108,17 +131,17 @@ export const DriftAppShell: React.FC = () => {
             color: 'var(--color-text-main)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: open || isMobile ? 'space-between' : 'center',
-            padding: open || isMobile ? '0 16px' : 0,
-            cursor: 'pointer',
+            justifyContent: expanded ? 'space-between' : 'center',
+            padding: expanded ? '0 16px' : 0,
+            cursor: isMobile ? 'pointer' : 'default',
             marginBottom: 24,
             opacity: isMobile ? 0 : 1,
-            pointerEvents: isMobile ? 'none' : 'auto',
+            pointerEvents: isMobile ? 'none' : 'none',
             transition: 'background 0.3s'
           }}
-          className="card-hover"
+          aria-hidden={!isMobile}
         >
-          {(open || isMobile) && <span style={{ fontSize: 13, letterSpacing: '0.1em', fontWeight: 700, fontFamily: 'var(--font-jakarta)' }}>NAVIGATE</span>}
+          <span style={{ ...labelStyle, fontSize: 13, letterSpacing: '0.1em', fontWeight: 700, fontFamily: 'var(--font-jakarta)' }}>NAVIGATE</span>
           <Menu size={16} />
         </button>
 
@@ -144,9 +167,9 @@ export const DriftAppShell: React.FC = () => {
                   color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: open || isMobile ? 'flex-start' : 'center',
+                  justifyContent: expanded ? 'flex-start' : 'center',
                   gap: 16,
-                  padding: open || isMobile ? '0 16px' : 0,
+                  padding: expanded ? '0 16px' : 0,
                   cursor: 'pointer',
                   fontWeight: 600,
                   transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -155,7 +178,7 @@ export const DriftAppShell: React.FC = () => {
                 className={!active ? "card-hover" : ""}
               >
                 <Icon size={18} />
-                {(open || isMobile) && <span style={{ fontSize: 13 }}>{item.label}</span>}
+                <span style={{ ...labelStyle, fontSize: 13 }}>{item.label}</span>
               </button>
             );
           })}
@@ -176,9 +199,9 @@ export const DriftAppShell: React.FC = () => {
               color: 'var(--color-text-muted)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: open || isMobile ? 'flex-start' : 'center',
+              justifyContent: expanded ? 'flex-start' : 'center',
               gap: 16,
-              padding: open || isMobile ? '0 16px' : 0,
+              padding: expanded ? '0 16px' : 0,
               cursor: 'pointer',
               fontWeight: 600,
               transition: 'background 0.3s'
@@ -186,7 +209,7 @@ export const DriftAppShell: React.FC = () => {
             className="card-hover ghost-border"
           >
             <House size={18} />
-            {(open || isMobile) && <span style={{ fontSize: 13 }}>Landing</span>}
+            <span style={{ ...labelStyle, fontSize: 13 }}>Landing</span>
           </button>
         </div>
       </aside>
