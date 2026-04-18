@@ -18,6 +18,8 @@ import api, {
   type AoiEntry,
 } from '../lib/api';
 
+const FORECAST_HOURS = [24, 48, 72] as const;
+
 const INITIAL_VIEW_STATE = {
   longitude: 72.8,
   latitude: 19.0,
@@ -25,6 +27,12 @@ const INITIAL_VIEW_STATE = {
   pitch: 30,
   bearing: 0
 };
+
+function snapForecastHour(value: number): (typeof FORECAST_HOURS)[number] {
+  return FORECAST_HOURS.reduce((closest, current) => {
+    return Math.abs(current - value) < Math.abs(closest - value) ? current : closest;
+  }, FORECAST_HOURS[0]);
+}
 
 export const OpsDashboard: React.FC = () => {
   const { aoi_id } = useParams<{ aoi_id: string }>();
@@ -41,6 +49,26 @@ export const OpsDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [timeSlider, setTimeSlider] = useState(24);
   const [generatingMission, setGeneratingMission] = useState<ExportFormat | null>(null);
+
+  const sliderProgress = ((timeSlider - 24) / 48) * 100;
+
+  const compactActionButtonBase: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.4rem',
+    padding: '0.5rem 0.8rem',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: 700,
+    fontSize: '0.78rem',
+    lineHeight: 1,
+    whiteSpace: 'nowrap',
+    flex: isMobile ? 1 : 'unset',
+    minWidth: isMobile ? 160 : 'unset',
+    transition: 'all 0.25s ease'
+  };
 
   useEffect(() => {
     if (dashboardRef.current) {
@@ -139,9 +167,12 @@ export const OpsDashboard: React.FC = () => {
   useEffect(() => {
     if (!aoi_id) return;
     const timer = window.setTimeout(() => {
+      const initialForecast = FORECAST_HOURS[0];
+      setTimeSlider(initialForecast);
+
       void fetchDashboardMetrics();
       void fetchDetection();
-      void fetchForecast(timeSlider);
+      void fetchForecast(initialForecast);
       void fetchMission();
 
       // Dynamically update viewState center based on custom string or available AOIs
@@ -173,7 +204,7 @@ export const OpsDashboard: React.FC = () => {
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [aoi_id, fetchDashboardMetrics, fetchDetection, fetchForecast, fetchMission, timeSlider]);
+  }, [aoi_id, fetchDashboardMetrics, fetchDetection, fetchForecast, fetchMission]);
 
   const handleExportMission = (format: ExportFormat) => {
     if (!aoi_id) return;
@@ -224,34 +255,52 @@ export const OpsDashboard: React.FC = () => {
   return (
     <div style={{ padding: isMobile ? '1rem' : '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '100vh', background: 'var(--color-background)', color: 'var(--color-text-main)', fontFamily: 'var(--font-manrope)' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.9rem', borderBottom: '1px solid var(--color-surface-variant)', paddingBottom: '1rem' }}>
-        <h2 style={{ margin: 0, color: 'var(--color-text-main)', fontSize: isMobile ? '1rem' : '1.5rem', fontFamily: 'var(--font-jakarta)' }}><Activity size={isMobile ? 18 : 24} style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--color-primary)' }} /> OPERATIONS: {aoi_id}</h2>
+        <h2 style={{ margin: 0, color: 'var(--color-text-main)', fontSize: isMobile ? '1rem' : '1.5rem', fontFamily: 'var(--font-jakarta)', display: 'flex', alignItems: 'center', gap: '8px' }}><Activity size={isMobile ? 18 : 24} style={{ color: 'var(--color-primary)' }} /> OPERATIONS: {aoi_id}</h2>
         
         <div style={{ display: 'flex', gap: '0.7rem', flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
           <button 
             onClick={() => handleExportMission('gpx')}
             disabled={!!generatingMission || !detectionData}
-            style={{ padding: '0.6rem 1rem', background: 'var(--color-surface-high)', color: 'var(--color-primary)', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset', transition: 'all 0.3s ease' }}>
-            <CheckCircle size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            style={{
+              ...compactActionButtonBase,
+              background: 'var(--color-surface-high)',
+              color: 'var(--color-primary)',
+              cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer',
+              opacity: (generatingMission || !detectionData) ? 0.75 : 1,
+            }}>
+            <CheckCircle size={14} />
             {generatingMission === 'gpx' ? 'GENERATING...' : 'EXPORT GPX'}
           </button>
 
           <button
             onClick={() => handleExportMission('geojson')}
             disabled={!!generatingMission || !detectionData}
-            style={{ padding: '0.6rem 1rem', background: 'var(--color-surface-highest)', color: 'var(--color-primary)', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset', transition: 'all 0.3s ease' }}>
-            <FileCode2 size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            style={{
+              ...compactActionButtonBase,
+              background: 'var(--color-surface-highest)',
+              color: 'var(--color-primary)',
+              cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer',
+              opacity: (generatingMission || !detectionData) ? 0.75 : 1,
+            }}>
+            <FileCode2 size={14} />
             {generatingMission === 'geojson' ? 'GENERATING...' : 'EXPORT GEOJSON'}
           </button>
 
           <button
             onClick={() => handleExportMission('pdf')}
             disabled={!!generatingMission || !detectionData}
-            style={{ padding: '0.6rem 1rem', background: 'var(--color-primary)', color: 'var(--color-on-primary)', border: 'none', borderRadius: '4px', cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 180 : 'unset', transition: 'all 0.3s ease' }}>
-            <FileText size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            style={{
+              ...compactActionButtonBase,
+              background: 'var(--color-primary)',
+              color: 'var(--color-on-primary)',
+              cursor: (generatingMission || !detectionData) ? 'not-allowed' : 'pointer',
+              opacity: (generatingMission || !detectionData) ? 0.75 : 1,
+            }}>
+            <FileText size={14} />
             {generatingMission === 'pdf' ? 'GENERATING...' : 'EXPORT PDF'}
           </button>
           
-          <button onClick={() => navigate('/drift')} style={{ padding: '0.6rem 1rem', background: 'var(--color-surface-container)', color: 'var(--color-text-main)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', flex: isMobile ? 1 : 'unset', minWidth: isMobile ? 140 : 'unset', transition: 'background 0.3s' }}>
+          <button onClick={() => navigate('/drift')} style={{ ...compactActionButtonBase, background: 'var(--color-surface-container)', color: 'var(--color-text-main)', minWidth: isMobile ? 140 : 'unset' }}>
             ABORT & RETURN
           </button>
         </div>
@@ -272,9 +321,55 @@ export const OpsDashboard: React.FC = () => {
           </div>
           
           <div style={{ padding: isMobile ? '1rem' : '1.5rem', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1rem', alignItems: isMobile ? 'stretch' : 'center', background: 'var(--color-surface-container)', borderRadius: '0 0 12px 12px', border: 'none' }}>
-            <div style={{ flexGrow: 1, display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '0.8rem' }}>
-              <label style={{ color: 'var(--color-text-main)', fontWeight: 'bold', fontFamily: 'var(--font-jakarta)' }}>T+ FORECAST: <span style={{ color: 'var(--color-primary)' }}>{timeSlider}h</span></label>
-              <input type="range" min="0" max="72" step="24" value={timeSlider} onChange={e => setTimeSlider(Number(e.target.value))} style={{ flexGrow: 1, width: '100%', accentColor: 'var(--color-primary)' }} />
+            <div style={{ flexGrow: 1, display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: 'column', gap: '0.65rem' }}>
+              <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ color: 'var(--color-text-main)', fontWeight: 'bold', fontFamily: 'var(--font-jakarta)' }}>T+ FORECAST</label>
+                <span style={{ color: 'var(--color-primary)', fontWeight: 700, fontFamily: 'var(--font-jakarta)' }}>{timeSlider}h</span>
+              </div>
+
+              <input
+                type="range"
+                min="24"
+                max="72"
+                step="1"
+                value={timeSlider}
+                onChange={(e) => setTimeSlider(snapForecastHour(Number(e.target.value)))}
+                style={{
+                  flexGrow: 1,
+                  width: '100%',
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  height: '8px',
+                  borderRadius: '999px',
+                  outline: 'none',
+                  background: `linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary) ${sliderProgress}%, var(--color-surface-variant) ${sliderProgress}%, var(--color-surface-variant) 100%)`
+                }}
+              />
+
+              <div style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.5rem' }}>
+                {FORECAST_HOURS.map((hour) => {
+                  const selected = timeSlider === hour;
+                  return (
+                    <button
+                      key={hour}
+                      onClick={() => setTimeSlider(hour)}
+                      style={{
+                        border: 'none',
+                        borderRadius: 999,
+                        padding: '0.42rem 0.6rem',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        background: selected ? 'var(--color-primary)' : 'var(--color-surface-highest)',
+                        color: selected ? 'var(--color-on-primary)' : 'var(--color-text-main)'
+                      }}
+                    >
+                      {hour}h
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <button disabled={loading} onClick={() => fetchForecast(timeSlider)} style={{ padding: '0.75rem 1.2rem', background: 'var(--color-primary)', color: 'var(--color-on-primary)', fontWeight: 'bold', border: 'none', borderRadius: '9999px', cursor: 'pointer', width: isMobile ? '100%' : 'auto', transition: 'opacity 0.3s' }}>
               CALCULATE D.R.I.F.T. PHYSICS
