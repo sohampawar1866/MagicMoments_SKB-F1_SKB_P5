@@ -140,6 +140,7 @@ export const LandingForm: React.FC = () => {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024);
   const [basemapMode, setBasemapMode] = useState<BasemapMode>('satellite');
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<{ id: string, record: any } | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -214,6 +215,7 @@ export const LandingForm: React.FC = () => {
     if (!info.coordinate || info.coordinate.length < 2) return;
     const [lng, lat] = info.coordinate;
 
+    setScanResult(null);
     setDrawingPoints(() => {
       const nextPoints: [number, number][] = [[lng, lat]];
       const previewSquare = buildSentinelPatchSquare(lng, lat, VISUAL_PREVIEW_PATCH_SIZE_METERS);
@@ -428,12 +430,7 @@ export const LandingForm: React.FC = () => {
 
         const center = record.center ?? drawingPoints[0];
         const customAoiId = `custom_${center[0].toFixed(4)}_${center[1].toFixed(4)}`;
-        navigate(`/drift/aoi/${customAoiId}`, {
-          state: {
-            highlightedId: record.id,
-            coordinates: record.coordinates,
-          },
-        });
+        setScanResult({ id: customAoiId, record });
       } catch (err: unknown) {
         console.error(err);
         const msg = apiErrorMessage(err);
@@ -481,12 +478,26 @@ export const LandingForm: React.FC = () => {
             </div>
           )}
 
-          <button
-            onClick={handleSubmit}
-            disabled={drawingPoints.length !== 1}
-            style={{ width: '100%', padding: '1rem', background: drawingPoints.length === 1 ? 'var(--color-primary)' : 'var(--color-surface-high)', color: drawingPoints.length === 1 ? 'var(--color-on-primary)' : 'var(--color-text-muted)', border: 'none', borderRadius: '12px', cursor: drawingPoints.length === 1 ? 'pointer' : 'not-allowed', fontWeight: 'bold', fontSize: '1rem', textTransform: 'uppercase', transition: 'all 0.3s ease' }}>
-            {drawingPoints.length === 1 ? 'Initialize AWS Deep Scan' : 'Awaiting Ocean Point...'}
-          </button>
+          {!scanResult ? (
+            <button
+              onClick={handleSubmit}
+              disabled={drawingPoints.length !== 1}
+              style={{ width: '100%', padding: '1rem', background: drawingPoints.length === 1 ? 'var(--color-primary)' : 'var(--color-surface-high)', color: drawingPoints.length === 1 ? 'var(--color-on-primary)' : 'var(--color-text-muted)', border: 'none', borderRadius: '12px', cursor: drawingPoints.length === 1 ? 'pointer' : 'not-allowed', fontWeight: 'bold', fontSize: '1rem', textTransform: 'uppercase', transition: 'all 0.3s ease' }}>
+              {drawingPoints.length === 1 ? 'Initialize AWS Deep Scan' : 'Awaiting Ocean Point...'}
+            </button>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ padding: '0.8rem', background: 'var(--color-surface-container)', borderLeft: '4px solid #10b981', fontSize: '0.9rem', color: '#10b981' }}>
+                <span style={{ fontWeight: 'bold' }}>[ SCAN COMPLETE ]</span><br />
+                Ocean drift trajectory charted on map.
+              </div>
+              <button
+                onClick={() => navigate(`/drift/aoi/${scanResult.id}`, { state: { highlightedId: scanResult.record.id, coordinates: scanResult.record.coordinates } })}
+                style={{ width: '100%', padding: '1rem', background: 'var(--color-primary)', color: 'var(--color-on-primary)', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', textTransform: 'uppercase', transition: 'all 0.3s ease', boxShadow: '0 0 15px var(--color-primary)' }}>
+                Proceed to Dashboard Snapshot
+              </button>
+            </div>
+          )}
 
           <button
             onClick={() => navigate('/drift/history')}
