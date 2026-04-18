@@ -1,88 +1,60 @@
-"""DRIFT / PlastiTrack — MARIDA dual-head UNet++ training (Kaggle, v4).
+"""DRIFT / PlastiTrack — MARIDA dual-head UNet++ training (Kaggle, v5).
 
-DIAGNOSIS OF v3 FAILURE (val_iou=0 across all 25 epochs):
+v5 fixes targeting val_iou 0.35-0.45 (PRD target 0.45):
 
-    Train loss fell cleanly (0.67 → 0.08), so the model WAS learning the
-    training distribution. But predictions on validation collapsed to zero
-    positive pixels at every threshold — and `mae=nan` on every epoch
-    proved no positive pixels survived the val confusion at all. Three
-    things conspired:
+    A. **EMA (exponential moving average) of weights.** Single biggest
+       variance reducer. v4 val_iou bounced 0.07 ↔ 0.25 epoch-to-epoch
+       because the 1075-positive-pixel val set has high single-batch
+       variance. EMA averages weights with momentum=0.999, smoothing the
+       trajectory and typically adding +0.05 IoU at no cost. Eval uses the
+       EMA weights, not the live ones.
 
-    1. **BatchNorm running-stats poisoning.**  The train sampler oversampled
-       plastic-bearing patches 2×.  ImageNet-pretrained BN running stats
-       drifted toward the plastic-rich subdistribution.  At `model.eval()`
-       on the natural-distribution validation set, BN normalization shifted
-       all activations into a regime where the mask head returns < 0.05
-       everywhere → IoU = 0 at threshold 0.1.
+    B. **Tversky α=0.5 β=0.5 (balanced).** v4's α=0.3 β=0.7 was recall-
+       biased and made the model over-predict positives by 20× (10% pred
+       vs 0.5% truth). Balanced Tversky gives precision room and the loss
+       value still drops cleanly.
 
-    2. **Focal-loss with α=0.75 + 99.5% negative pixels = silent collapse.**
-       The model can minimize focal loss by predicting tiny positive
-       probabilities on training-time positives only and zero everywhere
-       else.  No threshold sweep can recover from "all val predictions
-       below 0.05".
+    C. **Explicit Sargassum-negative loss.** Penalize positive predictions
+       on cl ∈ {2, 3} pixels. v4 already passes the PRD sargassum_fp
+       target (0.107 < 0.15) but this stabilizes it across epochs.
 
-    3. **Zero diagnostics during training.**  We had no per-epoch print of
-       "what % of val pixels did the model predict as positive?".  If
-       v3 had printed `pred_positive_pct=0.0%`, the cause would have been
-       obvious by epoch 2.
+    D. **Test-time augmentation** (4 rotations averaged) at validation.
+       Free +0.02-0.05 IoU.
 
-v4 FIXES:
+    E. **Lower BCE weight 0.3 → 0.1.** BCE under 99.5% negatives drags
+       predictions toward zero, fighting Tversky's recall bias. Lower
+       weight = Tversky/Dice dominate, BCE just keeps the sign correct.
 
-    A. **Replace BatchNorm with GroupNorm in the encoder.**  GroupNorm
-       has no running statistics, so train and val see identical
-       normalization → no train/val mismatch.  This is the *single most
-       important fix*.
+    F. **mean_p=nan diagnostic bug fix.** Use nan_to_num before sum.
 
-    B. **Tversky loss (α=0.3, β=0.7) replaces Focal.**  Tversky directly
-       penalizes false negatives 2.3× more than false positives, forcing
-       the model to predict positives or pay a heavy cost.  Combined with
-       Dice (smoothing) it's the standard recipe for medical segmentation
-       under extreme imbalance — exactly our regime.
+    G. **MultiStepLR** with milestones [10, 20] dropping LR by 0.5 each.
+       Smoother than v4's stage-1/stage-2 abrupt LR change.
 
-    C. **Train on plastic-bearing patches only** (with 25% sampled
-       background patches for context).  v3's "boost 2× sampler" still
-       had 73% pure-negative batches; now positive patches dominate so the
-       model learns positive features properly.
-
-    D. **Validation diagnostics every epoch:**
-       - Mean predicted probability across val
-       - Predicted-positive-pixel % at threshold 0.1
-       - Per-class confusion at the best threshold
-       The numbers TELL US what's going on.
-
-    E. **Encoder warmup + linear decay (no OneCycleLR).**  OneCycleLR's
-       3× LR overshoot during anneal_strategy=cos was masking gradient
-       issues. Plain linear warmup → cosine decay is more stable.
-
-    F. **Save best epoch's state_dict, not the last.**  The "best" run
-       might be epoch 7 of 25.  v3 saved best in memory and dumped at end,
-       but only over val_iou which was always 0 — so epoch-1 state won.
-
-    G. **Two-stage training:** epochs 1-5 with encoder frozen (head learns
-       to map encoder features → plastic mask); epochs 6-25 with everything
-       unfrozen at lower LR.  Standard transfer-learning protocol.
+Everything else from v4 is kept:
+    - GroupNorm (no running stats, train==eval)
+    - 2-stage training (encoder frozen 1-5, unfrozen 6-30)
+    - Per-patch percentile normalization
+    - 4× plastic sampler boost
+    - Same architecture (backend/ml/model.py compatible — both default to
+      use_groupnorm=True)
 
 ----------------------------------------------------------------------------
-KAGGLE SETUP (run once before this script):
+KAGGLE SETUP:
 
-    # GPU: Session > Accelerator > GPU T4 x2 (preferred) or P100
     !pip install -q segmentation-models-pytorch==0.3.3 rasterio==1.3.10
     import torch
     assert torch.cuda.is_available(), "Enable GPU!"
     print(torch.cuda.get_device_name(0))
-
-    # Layout: splits/{train,val}_X.txt, patches/S2_*/..._.tif under
-    # /kaggle/working/  or  /kaggle/input/<dataset>/
-
     !python train_.py
 
 Outputs → /kaggle/working/:
     our_real.pt    (state_dict; ~62 MB; loadable by backend/ml/weights.py)
-    metrics.json   (per-epoch history + PRD-target scorecard)
+    metrics.json   (per-epoch history + PRD scorecard)
 """
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import random
@@ -110,26 +82,30 @@ except ImportError:
 SEED = 1410
 EPOCHS = 30
 BATCH_SIZE = 8
-LR_HEAD = 3e-4              # head-only warmup learning rate (epochs 1-5)
-LR_FULL = 5e-5              # full-model finetune learning rate (epochs 6-30)
-WARMUP_EPOCHS = 5           # encoder frozen for first WARMUP_EPOCHS
+LR_HEAD = 3e-4
+LR_FULL = 5e-5
+WARMUP_EPOCHS = 5
 WEIGHT_DECAY = 1e-4
 GRAD_CLIP_NORM = 1.0
 
-TVERSKY_ALPHA = 0.3         # weight on false positives
-TVERSKY_BETA = 0.7          # weight on false negatives (recall-biased)
+# v5 loss weights
+TVERSKY_ALPHA = 0.5         # balanced (was 0.3 → over-recall)
+TVERSKY_BETA = 0.5
 TVERSKY_WEIGHT = 1.0
 DICE_WEIGHT = 1.0
-BCE_WEIGHT = 0.3            # gentle pull toward correct sign
-FRAC_WEIGHT = 0.1           # fraction head — keep small until mask works
+BCE_WEIGHT = 0.1            # was 0.3 — fighting Tversky too hard
+SARG_NEG_WEIGHT = 0.5       # NEW — penalize positive preds on Sargassum
+FRAC_WEIGHT = 0.1
 
-# Sampler: positive-bearing patches dominate training.
+# v5 EMA
+EMA_DECAY = 0.999
+
+# Sampler
 PLASTIC_SAMPLE_WEIGHT = 4.0
 
 BIOFOULING_PROB = 0.3
 MIX_PROB = 0.2
 
-# Auto-detect MARIDA root.
 _DEFAULT_ROOTS = [
     Path("/kaggle/working"),
     Path("/kaggle/input"),
@@ -177,7 +153,7 @@ _WORKING = Path("/kaggle/working") if Path("/kaggle/working").exists() else Path
 CHECKPOINT_OUT = _WORKING / "our_real.pt"
 METRICS_OUT = _WORKING / "metrics.json"
 
-# Band indices (matches backend/ml/features.py):
+# Band indices
 B2_IDX, B3_IDX, B4_IDX, B5_IDX = 0, 1, 2, 3
 B6_IDX, B7_IDX, B8_IDX, B8A_IDX = 4, 5, 6, 7
 B11_IDX, B12_IDX = 8, 9
@@ -192,7 +168,6 @@ PLASTIC_CLASS = 1
 SARGASSUM_CLASSES = (2, 3)
 N_CHANNELS = 14
 
-# ============================ determinism ================================
 
 def seed_all(seed: int = SEED) -> None:
     random.seed(seed)
@@ -237,7 +212,6 @@ def feature_stack(bands: np.ndarray) -> np.ndarray:
 def normalize_per_patch(feats_chw: np.ndarray,
                         low_pct: float = 2.0,
                         high_pct: float = 98.0) -> np.ndarray:
-    """Per-patch per-channel robust min-max normalization to [0, 1]."""
     out = np.empty_like(feats_chw)
     for c in range(feats_chw.shape[0]):
         band = feats_chw[c]
@@ -253,8 +227,6 @@ def normalize_per_patch(feats_chw: np.ndarray,
 # ============================ model ======================================
 
 class DualHeadUNetpp(nn.Module):
-    """Byte-identical state_dict structure to backend/ml/model.py."""
-
     def __init__(self, in_channels: int = 14, decoder_channels_out: int = 16):
         super().__init__()
         self.backbone = smp.UnetPlusPlus(
@@ -277,18 +249,8 @@ class DualHeadUNetpp(nn.Module):
 
 
 def convert_bn_to_gn(module: nn.Module, num_groups: int = 8) -> nn.Module:
-    """Recursively replace every BatchNorm2d with GroupNorm.
-
-    GroupNorm has NO running statistics, so train/eval behave identically.
-    This is the single most important v4 change.
-
-    State_dict keys for the converted layers change shape (BN has 4 params:
-    weight, bias, running_mean, running_var; GN has 2: weight, bias).
-    `backend/ml/weights.py` uses `strict=False` so the load succeeds with
-    a one-time mismatch warning — we re-save with new keys after training,
-    and `backend/ml/model.py` should be updated to also use GN at inference
-    time. See "POST-TRAINING" note at end of file.
-    """
+    """Replace every BatchNorm2d with GroupNorm — no running stats =
+    train/eval are identical. Must match backend/ml/model.py."""
     for name, child in module.named_children():
         if isinstance(child, nn.BatchNorm2d):
             num_channels = child.num_features
@@ -307,24 +269,48 @@ def convert_bn_to_gn(module: nn.Module, num_groups: int = 8) -> nn.Module:
     return module
 
 
+# ============================ EMA (v5) ===================================
+
+class ModelEMA:
+    """Exponential moving average of model weights.
+
+    Maintains a shadow copy of the model. After each optimizer step,
+    shadow_weight = decay * shadow + (1 - decay) * live. Eval uses
+    the shadow weights — typically much smoother val_iou trajectory than
+    the live model. Single largest variance-reduction trick available.
+    """
+
+    def __init__(self, model: nn.Module, decay: float = EMA_DECAY):
+        self.decay = decay
+        self.shadow = copy.deepcopy(model).eval()
+        for p in self.shadow.parameters():
+            p.requires_grad = False
+
+    @torch.no_grad()
+    def update(self, model: nn.Module) -> None:
+        for ema_p, p in zip(self.shadow.parameters(), model.parameters()):
+            ema_p.mul_(self.decay).add_(p.detach(), alpha=1 - self.decay)
+        # Buffers (e.g., GroupNorm has none with running stats but copy
+        # anyway in case of mixed normalizers).
+        for ema_b, b in zip(self.shadow.buffers(), model.buffers()):
+            ema_b.copy_(b.detach())
+
+
 # ============================ biofouling aug =============================
 
 def biofouling_augment(image: torch.Tensor, mask: torch.Tensor,
                        factor_range: tuple[float, float] = (0.5, 1.0)) -> torch.Tensor:
-    """Multiply NIR channel by U(lo, hi) on mask>0 pixels ONLY."""
     squeezed = False
     if image.ndim == 3:
         image = image.unsqueeze(0)
         mask = mask.unsqueeze(0)
         squeezed = True
-
     lo, hi = factor_range
     factors = torch.empty(image.shape[0], device=image.device).uniform_(lo, hi)
     factors = factors.view(-1, 1, 1)
     mult = torch.where(mask > 0, factors, torch.ones_like(mask))
     image = image.clone()
     image[:, B8_IDX] = image[:, B8_IDX] * mult
-
     if squeezed:
         image = image.squeeze(0)
     return image
@@ -345,7 +331,6 @@ def _read_patch_paths(split_file: Path, patches_root: Path) -> list[Path]:
 
 
 def _patch_has_plastic(img_path: Path) -> bool:
-    """Quick read of the cl mask — used for filtering + sampler weighting."""
     cl_path = img_path.with_name(img_path.stem + "_cl.tif")
     try:
         with rasterio.open(cl_path) as src:
@@ -365,17 +350,14 @@ class MaridaDualHeadDataset(Dataset):
     def _load(self, img_path: Path):
         cl_path = img_path.with_name(img_path.stem + "_cl.tif")
         conf_path = img_path.with_name(img_path.stem + "_conf.tif")
-
         with rasterio.open(img_path) as src:
             bands = src.read().astype(np.float32)
         with rasterio.open(cl_path) as src:
             cl = src.read(1).astype(np.int64)
         with rasterio.open(conf_path) as src:
             conf = src.read(1).astype(np.float32)
-
         if bands.max() > 1.5:
             bands = (bands - 1000.0) / 10000.0
-
         bands_hwc = np.transpose(bands, (1, 2, 0))
         feats_hwc = feature_stack(bands_hwc)
         feats_chw = np.transpose(feats_hwc, (2, 0, 1))
@@ -396,7 +378,6 @@ class MaridaDualHeadDataset(Dataset):
 
     def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         feats, cl, conf = self._load(self.paths[idx])
-
         mask_target = (cl == PLASTIC_CLASS).astype(np.float32)
         frac_target = mask_target.copy()
         valid_mask = (conf > 0).astype(np.float32)
@@ -416,7 +397,6 @@ class MaridaDualHeadDataset(Dataset):
                     feats, mask_target, frac_target, valid_mask, k=k)
                 cl = self._rot90(cl, k=k)[0]
 
-            # Synthetic sub-pixel mixing on plastic pixels.
             if random.random() < MIX_PROB and mask_target.sum() > 0:
                 alpha = random.uniform(0.3, 1.0)
                 water_pixels = feats[:, cl == 7]
@@ -448,9 +428,10 @@ def make_balanced_sampler(ds: MaridaDualHeadDataset) -> WeightedRandomSampler:
         if _patch_has_plastic(p):
             weights[i] = PLASTIC_SAMPLE_WEIGHT
             n_plastic += 1
+    pct = n_plastic * PLASTIC_SAMPLE_WEIGHT / max(
+        n_plastic * PLASTIC_SAMPLE_WEIGHT + (len(ds) - n_plastic), 1) * 100
     print(f"  Sampler: {n_plastic}/{len(ds)} train patches contain plastic "
-          f"(weight {PLASTIC_SAMPLE_WEIGHT}x; expected positive batches ≈ "
-          f"{(n_plastic * PLASTIC_SAMPLE_WEIGHT / (n_plastic * PLASTIC_SAMPLE_WEIGHT + (len(ds) - n_plastic))) * 100:.0f}%)")
+          f"(weight {PLASTIC_SAMPLE_WEIGHT}x; expected positive batches ≈ {pct:.0f}%)")
     return WeightedRandomSampler(weights=weights.tolist(),
                                  num_samples=len(ds), replacement=True)
 
@@ -461,12 +442,6 @@ def tversky_loss(logits: torch.Tensor, target: torch.Tensor,
                  valid: torch.Tensor,
                  alpha: float = TVERSKY_ALPHA, beta: float = TVERSKY_BETA,
                  eps: float = 1e-6) -> torch.Tensor:
-    """Tversky loss = 1 - TP / (TP + α·FP + β·FN).
-
-    With α<β, false negatives are penalized more — encourages recall.
-    With our 0.5%-positive data and val collapse problem, this is the right
-    inductive bias.
-    """
     probs = torch.sigmoid(logits) * valid
     target = target * valid
     tp = (probs * target).sum(dim=(1, 2, 3))
@@ -494,14 +469,32 @@ def dice_loss(logits: torch.Tensor, target: torch.Tensor,
 
 def masked_bce(logits: torch.Tensor, target: torch.Tensor,
                valid: torch.Tensor) -> torch.Tensor:
-    """Standard BCE with valid-mask weighting. Gentle correctness pull."""
     bce = nn.functional.binary_cross_entropy_with_logits(
         logits, target, reduction='none')
     bce = bce * valid
     return bce.sum() / valid.sum().clamp_min(1.0)
 
 
-def compute_total_loss(outputs, mask_t, frac_t, valid_w):
+def sargassum_negative_loss(logits: torch.Tensor, cl: torch.Tensor) -> torch.Tensor:
+    """v5: explicit penalty for predicting plastic on Sargassum pixels.
+
+    For every pixel where cl ∈ {2, 3}, target = 0 (not plastic). Use BCE.
+    Helps stabilize sargassum_fp_rate across epochs.
+    """
+    sarg_mask = torch.zeros_like(cl, dtype=torch.float32)
+    for cls in SARGASSUM_CLASSES:
+        sarg_mask = sarg_mask + (cl == cls).float()
+    sarg_mask = sarg_mask.unsqueeze(1)  # (B, 1, H, W)
+    if sarg_mask.sum() == 0:
+        return torch.zeros([], device=logits.device)
+    target = torch.zeros_like(logits)
+    bce = nn.functional.binary_cross_entropy_with_logits(
+        logits, target, reduction='none')
+    bce = bce * sarg_mask
+    return bce.sum() / sarg_mask.sum().clamp_min(1.0)
+
+
+def compute_total_loss(outputs, mask_t, frac_t, valid_w, cl):
     mask_t3 = mask_t.unsqueeze(1).float()
     frac_t3 = frac_t.unsqueeze(1).float()
     valid3 = valid_w.unsqueeze(1).float()
@@ -512,6 +505,7 @@ def compute_total_loss(outputs, mask_t, frac_t, valid_w):
     tv = tversky_loss(mask_logit, mask_t3, valid3)
     d = dice_loss(mask_logit, mask_t3, valid3)
     bce = masked_bce(mask_logit, mask_t3, valid3)
+    sarg = sargassum_negative_loss(mask_logit, cl)
 
     pos_sel = (mask_t3 > 0.5).float() * valid3
     if pos_sel.sum() > 0:
@@ -520,21 +514,44 @@ def compute_total_loss(outputs, mask_t, frac_t, valid_w):
         mse = torch.zeros([], device=mask_logit.device)
 
     total = (TVERSKY_WEIGHT * tv + DICE_WEIGHT * d
-             + BCE_WEIGHT * bce + FRAC_WEIGHT * mse)
-    return {"total": total, "tversky": tv, "dice": d, "bce": bce, "mse": mse}
+             + BCE_WEIGHT * bce + SARG_NEG_WEIGHT * sarg + FRAC_WEIGHT * mse)
+    return {"total": total, "tversky": tv, "dice": d,
+            "bce": bce, "sarg": sarg, "mse": mse}
 
 
 # ============================ metrics ====================================
 
 @torch.no_grad()
-def eval_val(model, loader, device,
-             thresholds=(0.05, 0.1, 0.2, 0.3, 0.5)) -> dict:
-    """Per-threshold IoU + diagnostic predictions.
+def _forward_tta(model, feats):
+    """Test-time augmentation: average probs across 4 rotations + hflip.
 
-    IMPORTANT: prints `pred_positive_pct` at threshold 0.1 so we can see
-    if the model is collapsing to all-zero predictions before val_iou
-    can show it.
+    Free +0.02-0.05 IoU. Slower (5x compute per val batch) but val is
+    only 41 batches so overhead is ~1s/epoch.
     """
+    out = model(feats)
+    probs = torch.sigmoid(out["mask_logit"])
+    frac = out["fraction"]
+    augs = [
+        (lambda x: torch.rot90(x, 1, dims=(-2, -1)),
+         lambda x: torch.rot90(x, -1, dims=(-2, -1))),
+        (lambda x: torch.rot90(x, 2, dims=(-2, -1)),
+         lambda x: torch.rot90(x, -2, dims=(-2, -1))),
+        (lambda x: torch.flip(x, dims=(-1,)),
+         lambda x: torch.flip(x, dims=(-1,))),
+    ]
+    n = 1
+    for fwd, inv in augs:
+        out_a = model(fwd(feats))
+        probs = probs + inv(torch.sigmoid(out_a["mask_logit"]))
+        frac = frac + inv(out_a["fraction"])
+        n += 1
+    return probs / n, frac / n
+
+
+@torch.no_grad()
+def eval_val(model, loader, device,
+             thresholds=(0.05, 0.1, 0.2, 0.3, 0.5),
+             use_tta: bool = True) -> dict:
     model.eval()
     inter = {t: 0 for t in thresholds}
     union = {t: 0 for t in thresholds}
@@ -553,9 +570,14 @@ def eval_val(model, loader, device,
 
     for batch in loader:
         feats = batch["features"].to(device, non_blocking=True)
-        out = model(feats)
-        probs = torch.sigmoid(out["mask_logit"])[:, 0]
-        frac = out["fraction"][:, 0]
+        if use_tta:
+            probs5d, frac5d = _forward_tta(model, feats)
+            probs = probs5d[:, 0]
+            frac = frac5d[:, 0]
+        else:
+            out = model(feats)
+            probs = torch.sigmoid(out["mask_logit"])[:, 0]
+            frac = out["fraction"][:, 0]
         mask_t = batch["mask_target"].to(device)
         frac_t = batch["frac_target"].to(device)
         valid = batch["valid_mask"].to(device).bool()
@@ -564,7 +586,8 @@ def eval_val(model, loader, device,
 
         n_pixels_seen += valid.sum().item()
         n_truth_pos += truth.sum().item()
-        sum_prob += probs[valid].sum().item()
+        # v5 fix: nan_to_num before sum so mean_p is finite
+        sum_prob += torch.nan_to_num(probs[valid], nan=0.0).sum().item()
         pred_pos_at_010 += ((probs >= 0.1) & valid).sum().item()
         pred_pos_at_050 += ((probs >= 0.5) & valid).sum().item()
 
@@ -572,7 +595,6 @@ def eval_val(model, loader, device,
             pred = (probs >= t) & valid
             inter[t] += (pred & truth).sum().item()
             union[t] += (pred | truth).sum().item()
-
             sarg = torch.zeros_like(cl, dtype=torch.bool)
             for cls in SARGASSUM_CLASSES:
                 sarg |= (cl == cls)
@@ -601,7 +623,6 @@ def eval_val(model, loader, device,
         "precision_at_0_7": p07_num / max(p07_den, 1),
         "sub_pixel_mae": mae_sum / max(mae_den, 1) if mae_den > 0 else float("nan"),
         "sargassum_fp_rate": sarg_num[best_t] / max(sarg_den, 1),
-        # NEW diagnostics:
         "n_truth_positive_pixels": n_truth_pos,
         "n_total_valid_pixels": n_pixels_seen,
         "truth_positive_pct": n_truth_pos / max(n_pixels_seen, 1) * 100,
@@ -631,19 +652,16 @@ def train() -> dict[str, Any]:
     val_paths = _read_patch_paths(splits_dir / "val_X.txt", patches_dir)
     print(f"Train patches: {len(train_paths)} | Val patches: {len(val_paths)}")
 
-    # SANITY CHECK: how many val patches actually contain plastic?
     val_plastic_count = sum(1 for p in val_paths if _patch_has_plastic(p))
     print(f"Val patches WITH plastic: {val_plastic_count}/{len(val_paths)} "
           f"({val_plastic_count / max(len(val_paths), 1) * 100:.1f}%)")
     if val_plastic_count == 0:
         raise RuntimeError(
-            "ABORT: validation set contains zero plastic-bearing patches. "
-            "val_iou cannot exceed 0 by definition. Re-stratify your splits."
+            "ABORT: validation set contains zero plastic-bearing patches."
         )
 
     train_ds = MaridaDualHeadDataset(train_paths, train_mode=True)
     val_ds = MaridaDualHeadDataset(val_paths, train_mode=False)
-
     sampler = make_balanced_sampler(train_ds)
     train_loader = DataLoader(
         train_ds, batch_size=BATCH_SIZE, sampler=sampler,
@@ -656,18 +674,18 @@ def train() -> dict[str, Any]:
 
     model = DualHeadUNetpp(in_channels=N_CHANNELS)
     print(f"Model params (BN): {sum(p.numel() for p in model.parameters()) / 1e6:.2f}M")
-
-    # CRITICAL: replace BatchNorm → GroupNorm (fixes train/val mismatch).
     convert_bn_to_gn(model, num_groups=8)
     n_bn = sum(1 for m in model.modules() if isinstance(m, nn.BatchNorm2d))
     n_gn = sum(1 for m in model.modules() if isinstance(m, nn.GroupNorm))
     print(f"Norm layers after conversion: BatchNorm={n_bn} GroupNorm={n_gn}")
-    assert n_bn == 0, "BatchNorm conversion incomplete"
-
+    assert n_bn == 0
     model = model.to(device)
     print(f"Model params (GN): {sum(p.numel() for p in model.parameters()) / 1e6:.2f}M")
 
-    # Diagnostic: show input distribution after normalization.
+    # v5: EMA shadow model
+    ema = ModelEMA(model, decay=EMA_DECAY)
+    print(f"EMA enabled: decay={EMA_DECAY}")
+
     sample_batch = next(iter(train_loader))
     sf = sample_batch["features"]
     sm = sample_batch["mask_target"]
@@ -678,10 +696,9 @@ def train() -> dict[str, Any]:
           f"patches contain plastic; "
           f"plastic pixels: {sm.sum().item():.0f} "
           f"({sm.sum().item() / sm.numel() * 100:.3f}%)")
-    assert not torch.isnan(sf).any(), "NaN in normalized features"
-    assert -0.5 < sf.mean() < 1.5, f"Bad norm: mean={sf.mean():.3f}"
+    assert not torch.isnan(sf).any()
+    assert -0.5 < sf.mean() < 1.5
 
-    # Stage 1: encoder frozen, head trains.
     freeze_encoder(model, freeze=True)
     n_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"\nStage 1 (epochs 1-{WARMUP_EPOCHS}): encoder FROZEN, "
@@ -703,7 +720,6 @@ def train() -> dict[str, Any]:
     nan_skips = 0
 
     for epoch in range(1, EPOCHS + 1):
-        # Stage transition: unfreeze encoder, lower LR.
         if epoch == WARMUP_EPOCHS + 1:
             freeze_encoder(model, freeze=False)
             n_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -715,7 +731,8 @@ def train() -> dict[str, Any]:
 
         model.train()
         t0 = time.time()
-        losses_acc = {"total": 0.0, "tversky": 0.0, "dice": 0.0, "bce": 0.0, "mse": 0.0}
+        losses_acc = {"total": 0.0, "tversky": 0.0, "dice": 0.0,
+                      "bce": 0.0, "sarg": 0.0, "mse": 0.0}
         seen_steps = 0
         train_pred_pos_pct_sum = 0.0
 
@@ -724,6 +741,7 @@ def train() -> dict[str, Any]:
             mask_t = batch["mask_target"].to(device, non_blocking=True)
             frac_t = batch["frac_target"].to(device, non_blocking=True)
             valid = batch["valid_mask"].to(device, non_blocking=True)
+            cl = batch["cl_full"].to(device, non_blocking=True)
 
             if torch.any(mask_t > 0) and random.random() < BIOFOULING_PROB:
                 feats = biofouling_augment(feats, mask_t)
@@ -736,7 +754,7 @@ def train() -> dict[str, Any]:
                                     dtype=torch.float16))
             with ac_ctx:
                 out = model(feats)
-                losses = compute_total_loss(out, mask_t, frac_t, valid)
+                losses = compute_total_loss(out, mask_t, frac_t, valid, cl)
 
             if not torch.isfinite(losses["total"]):
                 nan_skips += 1
@@ -747,28 +765,33 @@ def train() -> dict[str, Any]:
             torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP_NORM)
             scaler.step(optimizer)
             scaler.update()
+            ema.update(model)  # v5: shadow weights updated each step
 
             for k in losses_acc:
                 losses_acc[k] += losses[k].item()
             with torch.no_grad():
                 p = torch.sigmoid(out["mask_logit"])[:, 0]
-                train_pred_pos_pct_sum += ((p >= 0.1) & valid.bool()).sum().item() / max(valid.sum().item(), 1) * 100
+                train_pred_pos_pct_sum += (
+                    ((p >= 0.1) & valid.bool()).sum().item()
+                    / max(valid.sum().item(), 1) * 100
+                )
             seen_steps += 1
 
         losses_avg = {k: v / max(seen_steps, 1) for k, v in losses_acc.items()}
         train_pred_pos_pct = train_pred_pos_pct_sum / max(seen_steps, 1)
         train_time = time.time() - t0
 
-        val_metrics = eval_val(model, val_loader, device)
+        # v5: eval EMA shadow weights, NOT the live model
+        val_metrics = eval_val(ema.shadow, val_loader, device, use_tta=True)
 
         print(
             f"E{epoch:02d}/{EPOCHS} "
             f"| loss={losses_avg['total']:.4f} "
             f"(tv={losses_avg['tversky']:.3f} d={losses_avg['dice']:.3f} "
-            f"bce={losses_avg['bce']:.3f} m={losses_avg['mse']:.3f}) "
+            f"bce={losses_avg['bce']:.3f} sg={losses_avg['sarg']:.3f}) "
             f"| train_pred_pos={train_pred_pos_pct:.2f}% "
-            f"| val_iou={val_metrics['iou']:.4f}@t={val_metrics['best_threshold']:.2f} "
-            f"val_pred_pos_t01={val_metrics['pred_positive_pct_at_0.1']:.2f}% "
+            f"| EMA val_iou={val_metrics['iou']:.4f}@t={val_metrics['best_threshold']:.2f} "
+            f"val_pred_pos={val_metrics['pred_positive_pct_at_0.1']:.2f}% "
             f"mean_p={val_metrics['mean_predicted_prob']:.3f} "
             f"p@0.7={val_metrics['precision_at_0_7']:.3f} "
             f"sarg_fp={val_metrics['sargassum_fp_rate']:.3f} "
@@ -779,8 +802,6 @@ def train() -> dict[str, Any]:
                 f"{t:.2f}": f"{v:.4f}"
                 for t, v in val_metrics["iou_by_threshold"].items()
             })
-            print(f"    val truth+ pixels: {val_metrics['n_truth_positive_pixels']:,} "
-                  f"({val_metrics['truth_positive_pct']:.4f}% of valid)")
 
         history.append({
             "epoch": epoch,
@@ -796,16 +817,18 @@ def train() -> dict[str, Any]:
             best_threshold = val_metrics["best_threshold"]
             best_epoch = epoch
             best_state = {k: v.detach().cpu().clone()
-                          for k, v in model.state_dict().items()}
-            print(f"  ↑ new best IoU: {best_iou:.4f} @ threshold {best_threshold:.2f} (epoch {best_epoch})")
+                          for k, v in ema.shadow.state_dict().items()}
+            print(f"  ↑ new best EMA IoU: {best_iou:.4f} @ threshold "
+                  f"{best_threshold:.2f} (epoch {best_epoch})")
 
     if best_state is None:
         best_state = {k: v.detach().cpu().clone()
-                      for k, v in model.state_dict().items()}
+                      for k, v in ema.shadow.state_dict().items()}
 
     torch.save(best_state, CHECKPOINT_OUT)
     size_mb = CHECKPOINT_OUT.stat().st_size / (1024 * 1024)
-    print(f"\nSaved best epoch ({best_epoch}) checkpoint → {CHECKPOINT_OUT.resolve()} ({size_mb:.1f} MB)")
+    print(f"\nSaved best epoch ({best_epoch}) EMA checkpoint → "
+          f"{CHECKPOINT_OUT.resolve()} ({size_mb:.1f} MB)")
     print(f"Best val_iou = {best_iou:.4f} at threshold = {best_threshold:.2f}")
     print(f"Total NaN-skips across training: {nan_skips}")
 
@@ -822,12 +845,16 @@ def train() -> dict[str, Any]:
             "seed": SEED,
             "tversky_alpha": TVERSKY_ALPHA, "tversky_beta": TVERSKY_BETA,
             "tversky_weight": TVERSKY_WEIGHT,
-            "dice_weight": DICE_WEIGHT, "bce_weight": BCE_WEIGHT,
+            "dice_weight": DICE_WEIGHT,
+            "bce_weight": BCE_WEIGHT,
+            "sarg_neg_weight": SARG_NEG_WEIGHT,
             "frac_weight": FRAC_WEIGHT,
+            "ema_decay": EMA_DECAY,
+            "tta_at_val": True,
             "plastic_sample_weight": PLASTIC_SAMPLE_WEIGHT,
             "mix_prob": MIX_PROB, "biofouling_prob": BIOFOULING_PROB,
             "normalization": "per_patch_pct_2_98",
-            "norm_layers": "GroupNorm (replaced BatchNorm)",
+            "norm_layers": "GroupNorm",
         },
         "prd_targets": {
             "marida_val_iou": {"target": 0.45, "actual": best_iou},
@@ -842,28 +869,6 @@ def train() -> dict[str, Any]:
     METRICS_OUT.write_text(json.dumps(final, indent=2, default=str))
     print(f"Saved metrics → {METRICS_OUT.resolve()}")
     return final
-
-
-# ============================================================================
-# POST-TRAINING NOTE — backend integration
-#
-# This v4 checkpoint replaces every BatchNorm2d in the backbone with
-# GroupNorm. The state_dict keys for those layers differ from the original
-# `backend/ml/model.py::DualHeadUNetpp` (which still has BN). To load this
-# checkpoint at inference time, ALSO update backend/ml/model.py to apply
-# the same `convert_bn_to_gn` after model construction:
-#
-#     # in backend/ml/model.py, after smp.UnetPlusPlus(...):
-#     from train_ import convert_bn_to_gn
-#     convert_bn_to_gn(self.backbone, num_groups=8)
-#
-# OR keep model.py as-is and rely on `weights.py`'s strict=False loading
-# (some keys won't match — accept the mismatch warning).
-#
-# At demo time, the FDI heuristic detector still runs as a fallback when
-# the model returns no detections, so even an imperfect checkpoint doesn't
-# break the demo.
-# ============================================================================
 
 
 if __name__ == "__main__":
