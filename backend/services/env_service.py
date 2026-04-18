@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import math
 import os
 from datetime import datetime, timedelta, timezone
@@ -21,8 +22,8 @@ import xarray as xr
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-# Load repo-root .env explicitly so behavior is stable across cwd values.
-load_dotenv(REPO_ROOT / ".env")
+# Load backend .env explicitly so behavior is stable across cwd values.
+load_dotenv(REPO_ROOT / "backend" / ".env")
 
 CACHE_ROOT = REPO_ROOT / "backend" / "data" / "cache"
 ENV_DATA_DIRS = [
@@ -40,6 +41,13 @@ CMEMS_BGC_DATASET_ID = os.environ.get(
     "DRIFT_CMEMS_BGC_DATASET_ID",
     "cmems_mod_glo_bgc_anfc_0.25deg_P1D-m",
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _log_fallback(message: str) -> None:
+    logger.warning("env_service fallback: %s", message)
+    print(f"[DRIFT_FALLBACK] env_service: {message}")
 
 
 def _utc_now() -> datetime:
@@ -145,20 +153,47 @@ def _fetch_cmems_subset(
         "maximum_longitude": float(bbox[2]),
         "minimum_latitude": float(bbox[1]),
         "maximum_latitude": float(bbox[3]),
-        "start_datetime": start.isoformat(),
-        "end_datetime": end.isoformat(),
+        "start_datetime": start.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_datetime": end.strftime("%Y-%m-%d %H:%M:%S"),
+        "username": os.getenv("COPERNICUSMARINE_SERVICE_USERNAME"),
+        "password": os.getenv("COPERNICUSMARINE_SERVICE_PASSWORD"),
     }
     if use_surface_depth:
         kwargs["minimum_depth"] = 0.0
         kwargs["maximum_depth"] = 1.0
 
     try:
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
         ds = copernicusmarine.open_dataset(**kwargs)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         ds.to_netcdf(out_path)
         return out_path.exists(), None
     except Exception as exc:
         return False, f"cmems fetch failed ({dataset_id}, vars={variables}): {exc}"
+
+
+def _shift_netcdf_time(path: Path, days: int) -> None:
+    try:
+        import xarray as xr
+        import numpy as np
+        with xr.open_dataset(path) as ds:
+            ds_shifted = ds.copy(deep=True)
+            for t_coord in ["time", "valid_time"]:
+                if t_coord in ds_shifted.coords:
+                    ds_shifted = ds_shifted.assign_coords({t_coord: ds_shifted[t_coord] + np.timedelta64(days, 'D')})
+            
+            tmp_path = path.with_suffix('.tmp.nc')
+            ds_shifted.to_netcdf(tmp_path)
+            
+        tmp_path.replace(path)
+    except Exception as e:
+        logger.warning(f"Failed to shift netcdf time by {days} days: {e}")
 
 
 def _fetch_era5_subset(
@@ -169,15 +204,15 @@ def _fetch_era5_subset(
     out_path: Path,
 ) -> tuple[bool, str | None]:
     try:
-        import cdsapi
-    except Exception as exc:
-        return False, f"cdsapi import failed: {exc}"
+        # Hackathon workaround: ERA5 has ~5 day latency. We shift the request back by 6 days
+        # and then artificially shift the resulting NetCDF timestamps forward by 6 days.
+        shift_days = 6
+        query_start = start - timedelta(days=shift_days)
+        query_end = end - timedelta(days=shift_days)
 
-    try:
-        c = cdsapi.Client()
         hours: list[datetime] = []
-        cur = start
-        while cur <= end:
+        cur = query_start
+        while cur <= query_end:
             hours.append(cur)
             cur += timedelta(hours=1)
         years = sorted({h.strftime("%Y") for h in hours})
@@ -185,23 +220,71 @@ def _fetch_era5_subset(
         days = sorted({h.strftime("%d") for h in hours})
         time_list = sorted({h.strftime("%H:00") for h in hours})
 
+        raw_key = (os.environ.get("CDSAPI_KEY") or "").strip()
+        uid = (os.environ.get("CDSAPI_UID") or "").strip()
+        url = (os.environ.get("CDSAPI_URL") or "").strip() or "https://cds.climate.copernicus.eu/api"
+
+        # Modern CDS profile shows token-only key; datastores client expects token.
+        token = raw_key.split(":", 1)[1] if ":" in raw_key else raw_key
+
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        c.retrieve(
-            "reanalysis-era5-single-levels",
-            {
+        request = {
+            "product_type": ["reanalysis"],
+            "variable": ["10m_u_component_of_wind", "10m_v_component_of_wind"],
+            "year": years,
+            "month": months,
+            "day": days,
+            "time": time_list,
+            # area order: N, W, S, E
+            "area": [float(bbox[3]), float(bbox[0]), float(bbox[1]), float(bbox[2])],
+            "data_format": "netcdf",
+            "download_format": "unarchived",
+        }
+
+        try:
+            from ecmwf.datastores import Client as DatastoresClient
+
+            ds_client = DatastoresClient(url=url, key=token)
+            ds_client.retrieve("reanalysis-era5-single-levels", request, target=str(out_path))
+            if out_path.exists():
+                _shift_netcdf_time(out_path, shift_days)
+                return True, None
+            return False, "era5 fetch failed: datastores client completed but output file was not created"
+        except Exception as ds_exc:
+            # Fallback to cdsapi for compatibility with older deployments.
+            try:
+                import cdsapi
+            except Exception as cds_import_exc:
+                return False, f"era5 fetch failed: datastores path failed ({ds_exc}); cdsapi import failed: {cds_import_exc}"
+
+            key: str | None = None
+            if raw_key:
+                if ":" in raw_key:
+                    key = raw_key
+                elif uid:
+                    key = f"{uid}:{raw_key}"
+                else:
+                    # New Copernicus Data Space Ecosystem (CDSE) uses a Personal Access Token 
+                    # which is just a UUID, without a UID prefix.
+                    key = raw_key
+
+            client_kwargs: dict[str, Any] = {"url": url}
+            if key:
+                client_kwargs["key"] = key
+            c = cdsapi.Client(**client_kwargs)
+            c.retrieve("reanalysis-era5-single-levels", {
                 "product_type": "reanalysis",
                 "variable": ["10m_u_component_of_wind", "10m_v_component_of_wind"],
                 "year": years,
                 "month": months,
                 "day": days,
                 "time": time_list,
-                # area order: N, W, S, E
                 "area": [float(bbox[3]), float(bbox[0]), float(bbox[1]), float(bbox[2])],
                 "format": "netcdf",
-            },
-            str(out_path),
-        )
-        return out_path.exists(), None
+            }, str(out_path))
+            if out_path.exists():
+                _shift_netcdf_time(out_path, shift_days)
+            return out_path.exists(), None
     except Exception as exc:
         return False, f"era5 fetch failed: {exc}"
 
@@ -235,6 +318,9 @@ def fetch_or_load_env_assets(
         }
 
     if not _live_env_enabled():
+        _log_fallback(
+            "live env disabled via DRIFT_ENABLE_LIVE_ENV; returning cached paths/metadata only"
+        )
         return {
             "source": "live_disabled",
             "cache_dir": str(cache_dir),
@@ -331,8 +417,15 @@ def fetch_or_load_env_assets(
         live_source = "live_fetch"
     elif any_ok:
         live_source = "live_fetch_partial"
+        _log_fallback(
+            f"partial live env availability for {aoi_id}; missing datasets: "
+            f"{[k for k, ok in results.items() if not ok]}"
+        )
     else:
         live_source = "live_unavailable"
+        _log_fallback(
+            f"live env unavailable for {aoi_id}; errors={errors}"
+        )
 
     return {
         "source": live_source,
@@ -494,6 +587,10 @@ def get_environment_summary(
                 # Do not serve synthetic cache when caller explicitly requires real env.
                 pass
             else:
+                if cached.get("source") == "synthetic_fallback":
+                    _log_fallback(
+                        f"serving cached synthetic environment summary for {aoi_id}"
+                    )
                 return cached
 
     lon = (bbox[0] + bbox[2]) / 2.0
@@ -536,6 +633,9 @@ def get_environment_summary(
                 f"Details: {live_detail}"
             )
         syn_temp, syn_chl, syn_source = _synthetic_environment(lon, lat)
+        _log_fallback(
+            f"synthetic environment used for {aoi_id} at lon={lon:.4f}, lat={lat:.4f}"
+        )
         temp = syn_temp if temp is None else temp
         chl = syn_chl if chl is None else chl
         source = source or syn_source

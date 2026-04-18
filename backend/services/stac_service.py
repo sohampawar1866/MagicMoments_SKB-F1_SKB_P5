@@ -10,10 +10,15 @@ from datetime import timedelta
 from dotenv import load_dotenv
 import rasterio
 
-# Load repo-root .env explicitly so behavior is stable across cwd values.
+# Load backend .env explicitly so behavior is stable across cwd values.
 REPO_ROOT = Path(__file__).resolve().parents[2]
-load_dotenv(REPO_ROOT / ".env")
+load_dotenv(REPO_ROOT / "backend" / ".env")
 logger = logging.getLogger(__name__)
+
+
+def _log_fallback(message: str) -> None:
+    logger.warning("stac fallback: %s", message)
+    print(f"[DRIFT_FALLBACK] stac_service: {message}")
 
 # Grab the timeout from .env (defaults to 30 seconds if missing)
 STAC_FETCH_TIMEOUT = int(os.getenv("STAC_FETCH_TIMEOUT", 30))
@@ -208,6 +213,9 @@ def get_live_or_cached_imagery(aoi_id: str, bbox: list) -> dict:
         if not newest_cached_id:
             return {"error": "No internet connection, and no local fallback imagery found!"}
         logger.info("stac: using local fallback cache for %s -> %s", aoi_id, newest_cached_id)
+        _log_fallback(
+            f"using local cached imagery for {aoi_id} (item_id={newest_cached_id})"
+        )
         local_paths = _required_band_paths(os.path.join(aoi_folder, newest_cached_id))
         try:
             _ensure_stack(local_paths)
