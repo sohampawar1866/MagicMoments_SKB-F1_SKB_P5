@@ -174,7 +174,11 @@ def _resolve_spatial_bbox(aoi_id: str, bbox: str | None, polygon: str | None) ->
     return _bbox_from_custom_aoi_id(aoi_id)
 
 
-def _resolve_tile(aoi_id: str, s2_tile_path: str | None, bbox_override: list[float] | None = None) -> Path | None:
+def _resolve_tile(
+    aoi_id: str,
+    s2_tile_path: str | None,
+    bbox_override: list[float] | None = None,
+) -> tuple[Path | None, dict[str, Any] | None]:
     """Pick the Sentinel-2 tile to run inference on.
 
     Precedence:
@@ -185,7 +189,12 @@ def _resolve_tile(aoi_id: str, s2_tile_path: str | None, bbox_override: list[flo
     if s2_tile_path:
         p = Path(s2_tile_path)
         if p.exists():
-            return p
+            return p, {
+                "source": "explicit_path",
+                "item_id": None,
+                "stack_path": str(p),
+                "bbox": bbox_override,
+            }
         raise RuntimeError(f"ai_detector: provided s2_tile_path does not exist: {p}")
 
     query_bbox = bbox_override
@@ -205,14 +214,19 @@ def _resolve_tile(aoi_id: str, s2_tile_path: str | None, bbox_override: list[flo
                 paths = stac_result.get("local_paths", {})
                 stack = paths.get("stack")
                 if stack and Path(stack).exists():
-                    return Path(stack)
+                    return Path(stack), {
+                        "source": stac_result.get("source"),
+                        "item_id": stac_result.get("id"),
+                        "stack_path": stack,
+                        "bbox": query_bbox,
+                    }
                 raise RuntimeError(
                     f"ai_detector: STAC response for {aoi_id} missing usable stack path"
                 )
         except Exception as e:  # pragma: no cover — network flake
             raise RuntimeError(f"ai_detector: STAC lookup failed for {aoi_id}: {e}") from e
 
-    return None
+    return None, None
 
 
 def detect_macroplastic(
@@ -234,9 +248,18 @@ def detect_macroplastic(
         ensure_live=True,
     )
 
-    tile = _resolve_tile(aoi_id, s2_tile_path, bbox_override=bbox_override)
+    tile, tile_meta = _resolve_tile(aoi_id, s2_tile_path, bbox_override=bbox_override)
     if tile is None:
         raise RuntimeError(f"ai_detector: no Sentinel-2 tile resolved for {aoi_id}")
+
+    logger.info(
+        "ai_detector: imagery selected for %s (source=%s, item_id=%s, stack=%s, bbox=%s)",
+        aoi_id,
+        (tile_meta or {}).get("source"),
+        (tile_meta or {}).get("item_id"),
+        (tile_meta or {}).get("stack_path", str(tile)),
+        (tile_meta or {}).get("bbox"),
+    )
 
     try:
         from backend.core.config import Settings

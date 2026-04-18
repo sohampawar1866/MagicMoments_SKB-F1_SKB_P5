@@ -48,13 +48,15 @@ const RISK_COLORS = {
 };
 
 const parseDateOnly = (raw: string) => {
-  const day = (raw || '').split(' ')[0];
+  const source = (raw || '').trim();
+  const day = source.includes('T') ? source.split('T')[0] : source.split(' ')[0];
   const d = new Date(day);
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
 const toDayKey = (raw: string) => {
-  const day = (raw || '').split(' ')[0];
+  const source = (raw || '').trim();
+  const day = source.includes('T') ? source.split('T')[0] : source.split(' ')[0];
   return day || 'unknown';
 };
 
@@ -66,6 +68,7 @@ export const IntelDashboardPage: React.FC = () => {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 1024);
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [dayWindow, setDayWindow] = useState<'7' | '30' | 'all'>('30');
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
 
@@ -88,10 +91,15 @@ export const IntelDashboardPage: React.FC = () => {
   useEffect(() => {
     api
       .trackerSearch()
-      .then((res) => setRecords(Array.isArray(res) ? res : []))
+      .then((res) => {
+        setRecords(Array.isArray(res) ? res : []);
+        setLoadError(null);
+      })
       .catch((err) => {
-        console.error('tracker/search:', apiErrorMessage(err));
+        const message = apiErrorMessage(err);
+        console.error('tracker/search:', message);
         setRecords([]);
+        setLoadError(message);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -276,6 +284,23 @@ export const IntelDashboardPage: React.FC = () => {
           </div>
         </header>
 
+        {loadError && (
+          <section style={{ marginBottom: 14 }}>
+            <div
+              className="ghost-border"
+              style={{
+                background: 'var(--color-surface-container)',
+                borderRadius: 16,
+                padding: '10px 14px',
+                color: 'var(--color-tertiary)',
+                fontSize: 13,
+              }}
+            >
+              Tracker feed unavailable: {loadError}
+            </div>
+          </section>
+        )}
+
         <section id="overview" style={{ marginBottom: 18 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
             {[
@@ -438,7 +463,7 @@ export const IntelDashboardPage: React.FC = () => {
             ) : (
               <div style={{ display: 'grid', gap: 8 }}>
                 {[...filteredRecords]
-                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .slice(0, 10)
                   .map((r) => (
                     <div

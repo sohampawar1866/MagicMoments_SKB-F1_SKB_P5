@@ -17,6 +17,11 @@ from backend.services.env_service import fetch_or_load_env_assets
 logger = logging.getLogger(__name__)
 
 
+def _log_fallback(message: str) -> None:
+    logger.warning("drift_engine fallback: %s", message)
+    print(f"[DRIFT_FALLBACK] drift_engine: {message}")
+
+
 def _iter_coords(node):
     if not isinstance(node, (list, tuple)):
         return
@@ -207,6 +212,9 @@ def simulate_drift(
                 env = load_env_stack(cmems, era5, int(forecast_hours))
                 env_source = "static_prebaked"
                 logger.info("drift_engine: loaded real CMEMS+ERA5 for %s", aoi_id)
+                _log_fallback(
+                    f"using static prebaked env files for {aoi_id} ({cmems.name}, {era5.name})"
+                )
             except Exception as env_e:
                 env_errors.append(f"static env load failed: {env_e}")
         elif env is None:
