@@ -31,6 +31,28 @@ from backend.ml.spectral import gate_polygon_arrays
 from backend.ml.weights import load_weights
 
 
+def _normalize_per_patch(feats_chw: np.ndarray,
+                         low_pct: float = 2.0,
+                         high_pct: float = 98.0,
+                         eps: float = 1e-6) -> np.ndarray:
+    """Per-patch per-channel robust min-max normalization to [0, 1].
+
+    MUST match train_.py::normalize_per_patch exactly. Applied only when
+    cfg.ml.weights_source == 'our_real' (i.e. real trained weights expect
+    this input distribution). The dummy weights path skips it.
+    """
+    out = np.empty_like(feats_chw)
+    for c in range(feats_chw.shape[0]):
+        band = feats_chw[c]
+        lo = np.percentile(band, low_pct)
+        hi = np.percentile(band, high_pct)
+        if hi - lo < eps:
+            out[c] = 0.5
+        else:
+            out[c] = np.clip((band - lo) / (hi - lo), 0.0, 1.0)
+    return out
+
+
 # ----------------------- Cosine window ------------------------------------
 
 def _cosine_window_2d(size: int) -> np.ndarray:
@@ -224,6 +246,12 @@ def run_inference(tile_path: Path, cfg: Settings) -> DetectionFeatureCollection:
     bands_hwc = np.transpose(bands, (1, 2, 0))
     feats_hwc = feature_stack(bands_hwc)
     feats_chw = np.transpose(feats_hwc, (2, 0, 1)).astype(np.float32)
+    # CRITICAL: must apply same per-patch percentile normalization that
+    # train_.py uses, otherwise the trained weights see a totally
+    # different input distribution and predict zero positives.
+    # See train_.py::normalize_per_patch (v4+).
+    if getattr(cfg.ml, "weights_source", "dummy") == "our_real":
+        feats_chw = _normalize_per_patch(feats_chw)
 
     model = load_weights(cfg)
     prob, frac = _sliding_forward(

@@ -1,5 +1,9 @@
 ml:
-  weights_source: dummy
+  weights_source: our_real
+  # ^^ shipping v6 trained checkpoint (val_iou=0.274, sarg_fp=0.034,
+  # p@0.7=0.485 at best epoch). inference.py applies normalize_per_patch
+  # under this mode to match train_.py input distribution. Falls back to
+  # FDI heuristic via ai_detector when model returns zero detections.
   kagglehub_handle: manastiwari1410/drift-unetpp/pytorch/v1
   confidence_threshold: 0.5
   min_area_m2: 200.0
