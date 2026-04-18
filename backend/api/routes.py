@@ -18,6 +18,8 @@ import json
 import logging
 import math
 import tempfile
+import threading
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -42,12 +44,11 @@ def _as_http_error(exc: Exception) -> HTTPException:
     return HTTPException(status_code=503, detail=str(exc))
 
 
-def _run_detection(
-    aoi_id: str,
-    *,
-    s2_tile_path: str | None = None,
-    bbox: str | None = None,
-    polygon: str | None = None,
+_detection_lock = threading.Lock()
+
+@lru_cache(maxsize=32)
+def _locked_run_detection(
+    aoi_id: str, s2_tile_path: str | None, bbox: str | None, polygon: str | None
 ) -> dict:
     try:
         return detect_macroplastic(aoi_id, s2_tile_path=s2_tile_path, bbox=bbox, polygon=polygon)
@@ -55,6 +56,16 @@ def _run_detection(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except RuntimeError as exc:
         raise _as_http_error(exc) from exc
+
+def _run_detection(
+    aoi_id: str,
+    *,
+    s2_tile_path: str | None = None,
+    bbox: str | None = None,
+    polygon: str | None = None,
+) -> dict:
+    with _detection_lock:
+        return _locked_run_detection(aoi_id, s2_tile_path, bbox, polygon)
 
 
 def _parse_bbox_str(raw: str | None) -> list[float] | None:
@@ -120,7 +131,7 @@ def _bbox_area_m2(bbox_vals: list[float]) -> float:
 
 
 @router.get("/aois")
-async def list_aois():
+def list_aois():
     """Return pre-staged AOIs (frontend dropdown).
 
     Returns canonical AOIs from aoi_registry.
@@ -132,7 +143,7 @@ async def list_aois():
 
 
 @router.get("/detect")
-async def detect_plastic(
+def detect_plastic(
     aoi_id: str = "mumbai",
     s2_tile_path: str | None = None,
     bbox: str | None = None,
@@ -147,7 +158,7 @@ async def detect_plastic(
 
 
 @router.get("/forecast")
-async def forecast_drift(
+def forecast_drift(
     aoi_id: str = "mumbai",
     hours: int = 24,
     bbox: str | None = None,
@@ -167,7 +178,7 @@ async def forecast_drift(
 
 
 @router.get("/mission")
-async def plan_mission(
+def plan_mission(
     aoi_id: str = "mumbai",
     bbox: str | None = None,
     polygon: str | None = None,
@@ -181,7 +192,7 @@ async def plan_mission(
 
 
 @router.get("/dashboard/metrics")
-async def get_dashboard_stats(
+def get_dashboard_stats(
     aoi_id: str = "mumbai",
     bbox: str | None = None,
     polygon: str | None = None,
@@ -237,7 +248,7 @@ async def get_dashboard_stats(
 
 
 @router.get("/environment")
-async def get_environment_context(
+def get_environment_context(
     aoi_id: str = "mumbai",
     bbox: str | None = None,
     polygon: str | None = None,
@@ -258,7 +269,7 @@ async def get_environment_context(
 
 
 @router.get("/alerts/preview")
-async def preview_deposition_alerts(
+def preview_deposition_alerts(
     aoi_id: str = "mumbai",
     hours: int = 360,
     bbox: str | None = None,
@@ -287,7 +298,7 @@ async def preview_deposition_alerts(
 
 
 @router.get("/mission/export")
-async def export_mission_file(
+def export_mission_file(
     aoi_id: str = "mumbai",
     format: str = "gpx",
     bbox: str | None = None,

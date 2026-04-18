@@ -21,7 +21,7 @@ async def test_workflows():
     
     print("\n--- 1. Testing /aois ---")
     try:
-        res = await list_aois()
+        res = list_aois()
         print("Success! Found:", list(res.get("aois", {}).keys()))
         results["aois"] = "PASSED"
     except Exception as e:
@@ -30,7 +30,7 @@ async def test_workflows():
 
     print("\n--- 2. Testing /detect ---")
     try:
-        res = await detect_plastic(aoi_id="mumbai")
+        res = detect_plastic(aoi_id="mumbai")
         num_features = len(res.get("features", []))
         print(f"Success! Detected {num_features} plastic features.")
         results["detect"] = "PASSED"
@@ -40,7 +40,7 @@ async def test_workflows():
 
     print("\n--- 3. Testing /forecast ---")
     try:
-        res = await forecast_drift(aoi_id="mumbai", hours=24)
+        res = forecast_drift(aoi_id="mumbai", hours=24)
         print(f"Success! Generated forecast features.")
         results["forecast"] = "PASSED"
     except Exception as e:
@@ -49,7 +49,7 @@ async def test_workflows():
 
     print("\n--- 4. Testing /mission ---")
     try:
-        res = await plan_mission(aoi_id="mumbai")
+        res = plan_mission(aoi_id="mumbai")
         print(f"Success! Planned mission.")
         results["mission"] = "PASSED"
     except Exception as e:
@@ -60,7 +60,7 @@ async def test_workflows():
         
     print("\n--- 5. Testing /dashboard/metrics ---")
     try:
-        res = await get_dashboard_stats(aoi_id="mumbai")
+        res = get_dashboard_stats(aoi_id="mumbai")
         print(f"Success! Got metrics.")
         results["metrics"] = "PASSED"
     except Exception as e:
@@ -69,7 +69,7 @@ async def test_workflows():
 
     print("\n--- 6. Testing /alerts/preview ---")
     try:
-        res = await preview_deposition_alerts(aoi_id="mumbai", hours=24)
+        res = preview_deposition_alerts(aoi_id="mumbai", hours=24)
         print(f"Success! Generated alerts.")
         results["alerts"] = "PASSED"
     except Exception as e:

@@ -109,9 +109,9 @@ if not os.path.exists(DB_FILE):
 
 
 def get_history() -> list[dict]:
-    if not os.path.exists(DB_FILE):
-        return []
     with db_lock:
+        if not os.path.exists(DB_FILE):
+            return []
         with open(DB_FILE, "r", encoding="utf-8") as f:
             try:
                 payload = json.load(f)
@@ -135,7 +135,7 @@ def save_history(history: list[dict]) -> None:
 
 
 @router.get("/coastline")
-async def get_coastline():
+def get_coastline():
     history = get_history()
     if not os.path.exists(COASTLINE_FILE):
         return {"type": "FeatureCollection", "features": []}
@@ -170,7 +170,7 @@ async def get_coastline():
 
 
 @router.post("/search")
-async def add_search(box: SearchBox):
+def add_search(box: SearchBox):
     if not box.coordinates:
         raise HTTPException(status_code=400, detail="Coordinates array cannot be empty.")
 
@@ -240,12 +240,12 @@ async def add_search(box: SearchBox):
 
 
 @router.get("/search")
-async def get_searches():
+def get_searches():
     return get_history()
 
 
 @router.delete("/search")
-async def clear_searches():
+def clear_searches():
     history = get_history()
     cleared = len(history)
     save_history([])
@@ -257,7 +257,7 @@ async def clear_searches():
 
 
 @router.post("/revisit/{record_id}")
-async def reactivate_search(record_id: str):
+def reactivate_search(record_id: str):
     history = get_history()
     target_idx = None
 
